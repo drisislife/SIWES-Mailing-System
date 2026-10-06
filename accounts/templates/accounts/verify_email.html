@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Email</title>
+</head>
+<body>
+    <h2>Check your email!</h2>
+    <p>We sent a 6-digit code to <strong>{{ email }}</strong>.</p>
+    
+    <!-- Show error messages if they type the wrong code -->
+    {% if messages %}
+        <ul style="color: red;">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Verify Code</button>
+    </form>
+</body>
+</html>

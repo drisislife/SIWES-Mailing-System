@@ -1,0 +1,80 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Sent Messages - CWS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-10">
+
+        <!-- Flash messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Navigation Tabs / Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+                <ul class="nav nav-pills">
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" href="{% url 'inbox' %}">Inbox</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active bg-primary" href="{% url 'sent_messages' %}">Sent Messages</a>
+                    </li>
+                </ul>
+            </div>
+            <a href="{% url 'compose_message' %}" class="btn btn-primary">Compose New Message</a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h4 class="mb-0 text-dark fw-bold">Outbox / Sent Messages</h4>
+            </div>
+            <div class="card-body p-0">
+                {% if sent_messages %}
+                    <div class="list-group list-group-flush">
+                        {% for msg in sent_messages %}
+                            <a href="{% url 'message_detail' msg.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <h6 class="mb-0 text-dark fw-bold">{{ msg.subject }}</h6>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <strong>To:</strong> {{ msg.recipient.email }}
+                                        <span class="badge bg-light text-secondary border ms-1">{{ msg.recipient.department.name|default:"Unassigned" }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ msg.timestamp|date:"M d, Y, H:i" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    {% if msg.status == 'pending_hod' %}
+                                        <span class="badge bg-warning text-dark">Pending HOD Approval</span>
+                                    {% elif msg.status == 'approved' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                    {% if msg.hod_comment %}
+                                        <div class="small text-muted mt-1 fst-italic">Note attached</div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <h5>No Sent Messages</h5>
+                        <p class="mb-3">You haven't sent any messages yet.</p>
+                        <a href="{% url 'compose_message' %}" class="btn btn-outline-primary btn-sm">Compose your first message</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

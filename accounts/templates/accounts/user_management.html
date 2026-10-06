@@ -1,0 +1,62 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}User Management - CWS{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-12">
+        <h2 class="mb-4 text-primary">User Management Portal</h2>
+        
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fs-5 fw-bold">
+                Pending User Approvals
+            </div>
+            <div class="card-body p-0">
+                {% if unapproved_users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Date Registered</th>
+                                    <th>Assign Department</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pending_user in unapproved_users %}
+                                <tr>
+                                    <td>{{ pending_user.email }}</td>
+                                    <td>{{ pending_user.date_joined|date:"M d, Y" }}</td>
+                                    <form method="POST" action="{% url 'user_management' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="user_id" value="{{ pending_user.id }}">
+                                        
+                                        <td>
+                                            <select name="department_id" class="form-select form-select-sm" required>
+                                                <option value="" disabled selected>Select Department...</option>
+                                                {% for dept in departments %}
+                                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm me-1">Approve</button>
+                                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-sm">Reject</button>
+                                        </td>
+                                    </form>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <p class="mb-0">No pending user registrations at this time.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

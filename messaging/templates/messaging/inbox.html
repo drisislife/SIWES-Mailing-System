@@ -1,0 +1,80 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Inbox - CWS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-10">
+        
+        <!-- Django flash messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Navigation Tabs / Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+                <h4 class="mb-0 text-dark fw-bold">
+                    My Inbox 
+                    {% if unread_count > 0 %}
+                        <span class="badge bg-danger ms-2">{{ unread_count }} Unread</span>
+                    {% endif %}
+                </h4>
+            </div>
+            <a href="{% url 'compose_memo' %}" class="btn btn-primary">Compose New Message</a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h4 class="mb-0 text-dark fw-bold">Received Messages</h4>
+            </div>
+            <div class="card-body p-0">
+                {% if memos %}
+                    <div class="list-group list-group-flush">
+                        {% for msg in memos %}
+                            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 {% if not msg.is_read %}bg-white fw-semibold border-start border-primary border-4{% else %}bg-light text-muted{% endif %}">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <h6 class="mb-0 {% if not msg.is_read %}text-dark fw-bold{% else %}text-secondary{% endif %}">
+                                            {{ msg.subject }}
+                                        </h6>
+                                        {% if not msg.is_read %}
+                                            <span class="badge bg-primary">New</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="small {% if not msg.is_read %}text-dark{% else %}text-muted{% endif %}">
+                                        <strong>From:</strong> {{ msg.sender.email }}
+                                        <span class="badge bg-light text-secondary border ms-1">{{ msg.sender.department.name|default:"Unassigned" }}</span>
+                                    </div>
+                                    <!-- FIXED: Changed created_at to timestamp right here! -->
+                                    <small class="text-muted">{{ msg.timestamp|date:"M d, Y, H:i" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    {% if msg.status == 'PENDING_HOD' %}
+                                        <span class="badge bg-warning text-dark">Pending HOD Approval</span>
+                                    {% elif msg.status == 'DELIVERED' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <h5>Your inbox is empty</h5>
+                        <p class="mb-3">No messages have been received yet.</p>
+                        <a href="{% url 'compose_memo' %}" class="btn btn-outline-primary btn-sm">Send a message</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

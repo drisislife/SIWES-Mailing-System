@@ -1,0 +1,174 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}HOD Approvals - CWS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-11">
+
+        <!-- Flash messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <h2 class="mb-1 text-primary fw-bold">HOD Approvals Portal</h2>
+                <div class="text-muted small">
+                    Review and authorize cross-department communications
+                    {% if is_admin %}
+                        <span class="badge bg-danger ms-2">Administrator (All Departments)</span>
+                    {% elif user.department %}
+                        <span class="badge bg-info text-dark ms-2">Dept: {{ user.department.name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                    {{ pending_messages|length }} Pending Action
+                </span>
+            </div>
+        </div>
+
+        <!-- Pending Messages Section -->
+        <h4 class="mb-3 text-secondary">Awaiting Your Approval</h4>
+
+        {% if pending_messages %}
+            {% for msg in pending_messages %}
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <span class="fw-bold fs-5 text-dark">{{ msg.subject }}</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark">Pending HOD Approval</span>
+                            <small class="text-muted">{{ msg.timestamp|date:"M d, Y, H:i" }}</small>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row mb-3 g-2">
+                            <div class="col-md-6">
+                                <div class="p-2 border rounded bg-light">
+                                    <strong>Sender:</strong> {{ msg.sender.email }}
+                                    <span class="badge bg-secondary ms-1">{{ msg.sender.department.name|default:"Unassigned" }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-2 border rounded bg-light">
+                                    <strong>Recipient:</strong> {{ msg.recipient.email }}
+                                    <span class="badge bg-primary ms-1">{{ msg.recipient.department.name|default:"Unassigned" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Message Content Preview -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted fw-semibold">Message Body:</label>
+                            <div class="p-3 bg-white border rounded" style="white-space: pre-wrap; min-height: 80px;">{{ msg.body }}</div>
+                        </div>
+
+                        <!-- Action Form with Comment & Edit -->
+                        <form method="POST" class="mt-3">
+                            {% csrf_token %}
+
+                            <!-- Quick Inline Edit (Optional) -->
+                            <div class="mb-3">
+                                <a class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold" data-bs-toggle="collapse" href="#quickEdit-{{ msg.id }}" role="button">
+                                    &plus; Quick Edit Subject / Body Inline
+                                </a>
+                                <div class="collapse mt-2" id="quickEdit-{{ msg.id }}">
+                                    <div class="card card-body bg-light border p-3">
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold text-dark">Edit Subject:</label>
+                                            <input type="text" name="subject" class="form-control form-control-sm" value="{{ msg.subject }}">
+                                        </div>
+                                        <div>
+                                            <label class="form-label small fw-bold text-dark">Edit Body:</label>
+                                            <textarea name="body" class="form-control form-control-sm" rows="5">{{ msg.body }}</textarea>
+                                        </div>
+                                        <div class="form-text small">Changes made here will be delivered to the recipient upon approval.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="comment-{{ msg.id }}" class="form-label text-muted small fw-semibold">HOD Remark / Note (Optional for approval; recommended for rejection):</label>
+                                <input type="text" id="comment-{{ msg.id }}" name="hod_comment" class="form-control" placeholder="Add remark or reason for decision...">
+                            </div>
+
+                            <div class="d-flex gap-2 justify-content-between align-items-center flex-wrap pt-2 border-top">
+                                <a href="{% url 'hod_review_message' msg.id %}" class="btn btn-outline-primary btn-sm">
+                                    Edit &rarr;
+                                </a>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" formaction="{% url 'reject_message' msg.id %}" class="btn btn-outline-danger px-3">
+                                        Reject
+                                    </button>
+                                    <button type="submit" formaction="{% url 'approve_message' msg.id %}" class="btn btn-success px-4">
+                                        Approve & Deliver
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card shadow-sm border-0 mb-4 text-center py-5">
+                <div class="card-body">
+                    <h5 class="text-success mb-2">All Caught Up!</h5>
+                    <p class="text-muted mb-0">There are currently no cross-department messages awaiting your approval.</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Recent Approvals History Section -->
+        {% if processed_messages %}
+            <div class="card shadow-sm border-0 mt-4 mb-5">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 text-secondary">Recently Processed Approvals (Last 10)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Subject</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Status</th>
+                                <th>HOD Remark</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pmsg in processed_messages %}
+                                <tr>
+                                    <td class="fw-semibold">{{ pmsg.subject }}</td>
+                                    <td>{{ pmsg.sender.email }}</td>
+                                    <td>{{ pmsg.recipient.email }}</td>
+                                    <td>
+                                        {% if pmsg.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% elif pmsg.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ pmsg.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted small">{{ pmsg.hod_comment|default:"-" }}</td>
+                                    <td class="text-muted small">{{ pmsg.timestamp|date:"M d, H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

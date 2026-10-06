@@ -1,0 +1,61 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Dashboard - CWS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <h2 class="mb-4 text-primary">Welcome to your Dashboard</h2>
+        
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fs-5 fw-bold">
+                User Details
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
+                    <li class="list-group-item"><strong>Username:</strong> {{ user.username }}</li>
+                    <li class="list-group-item">
+                        <strong>Department:</strong> 
+                        {% if user.department %}
+                            <span class="badge bg-secondary">{{ user.department.name }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending Assignment</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Role:</strong> 
+                        <span class="badge bg-info text-dark">{{ user.get_role_display }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quick Messaging Actions -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-white fs-5 fw-bold text-dark">
+                Quick Actions
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'inbox' %}" class="btn btn-primary px-3">
+                        Go to Inbox
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary px-3">
+                        Sent Messages (Soon)
+                    </a>
+                    <!-- Notice we changed this from compose_message to compose_memo -->
+                    <a href="{% url 'compose_memo' %}" class="btn btn-success px-3">
+                        Compose New Message
+                    </a>
+                    {% if user.role == 'HOD' or user.role == 'ADMIN' or user.is_superuser %}
+                        <a href="#" class="btn btn-warning text-dark fw-semibold px-3">
+                            Approvals Portal (Soon)
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
