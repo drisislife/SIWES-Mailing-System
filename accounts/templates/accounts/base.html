@@ -3,103 +3,817 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SIWES Mailing System{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
+    <title>{% block title %}CWS Council Workspace System{% endblock %}</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-bg: #0c1427;
+            --sidebar-card: #152238;
+            --sidebar-card-border: #1e2f4c;
+            --sidebar-hover: #1c2b47;
+            --body-bg: #f0f4f9;
+            --card-bg: #ffffff;
+            --emerald-primary: #10b981;
+            --emerald-dark: #059669;
+            --emerald-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            --blue-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            --cyan-accent: #0ea5e9;
+            --pill-bg: #f1f5f9;
+            --pill-hover: #e2e8f0;
+            --text-navy: #0f172a;
+            --text-muted: #64748b;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-pill: 9999px;
+            --shadow-subtle: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+            --shadow-float: 0 10px 30px -5px rgba(16, 185, 129, 0.25);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-navy);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* -------------------------------------------------------------
+           Layout Shell
+        ------------------------------------------------------------- */
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling (Direct Inspo from Left Dark Navy Panel) */
+        .app-sidebar {
+            width: 290px;
+            min-width: 290px;
+            background-color: var(--sidebar-bg);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 20px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 1020;
+        }
+
+        .app-sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .app-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        /* Brand / Logo Area */
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #ffffff;
+            margin-bottom: 28px;
+            padding: 0 4px;
+        }
+        .sidebar-brand-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--emerald-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.35rem;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
+        .sidebar-brand-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+        .sidebar-brand-title span {
+            color: var(--emerald-primary);
+        }
+
+        /* Inspo Sidebar Dark Card Modules */
+        .sidebar-widget-card {
+            background-color: var(--sidebar-card);
+            border: 1px solid var(--sidebar-card-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+        .sidebar-widget-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Nav Links */
+        .sidebar-nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sidebar-nav-item a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .sidebar-nav-item a:hover {
+            background-color: var(--sidebar-hover);
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+        .sidebar-nav-item.active a {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--emerald-primary);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .sidebar-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sidebar-nav-left i {
+            font-size: 1.15rem;
+            opacity: 0.9;
+        }
+
+        /* Inspo Sidebar Pill Row */
+        .sidebar-pill-row {
+            background-color: #0c1427;
+            border: 1px solid #1e2f4c;
+            border-radius: var(--radius-pill);
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .sidebar-pill-row:hover {
+            background-color: #1e2f4c;
+            color: #ffffff;
+        }
+        .sidebar-pill-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(14, 165, 233, 0.2);
+            color: var(--cyan-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        /* Inspo "Our Team Members" Widget */
+        .sidebar-member-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 4px;
+        }
+        .sidebar-member-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #ffffff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .sidebar-member-name {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-member-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            line-height: 1.2;
+        }
+
+        /* Bottom Emerald Pill Action Button (Inspo: "DOWNLOAD" button) */
+        .sidebar-cta-btn {
+            background: var(--emerald-gradient);
+            color: #ffffff !important;
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 12px 20px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            box-shadow: var(--shadow-float);
+            transition: all 0.25s ease;
+            width: 100%;
+        }
+        .sidebar-cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(16, 185, 129, 0.35);
+            color: #ffffff;
+        }
+
+        /* -------------------------------------------------------------
+           Main Content Area
+        ------------------------------------------------------------- */
+        .app-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background-color: var(--body-bg);
+        }
+
+        /* Top Bar */
+        .app-topbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            padding: 16px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .topbar-greeting {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-navy);
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--emerald-primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* User Profile Pill (Inspo: Top-Right "Md. Ibrahim / Web Designer") */
+        .topbar-user-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-pill);
+            padding: 6px 16px 6px 6px;
+            transition: all 0.2s ease;
+        }
+        .topbar-user-pill:hover {
+            border-color: #cbd5e1;
+            background-color: #f8fafc;
+        }
+        .topbar-user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--emerald-gradient);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .topbar-user-info {
+            line-height: 1.2;
+        }
+        .topbar-user-name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-navy);
+        }
+        .topbar-user-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Main Workspace Inner Body */
+        .app-content {
+            padding: 32px 36px 60px 36px;
+            flex: 1;
+        }
+
+        /* -------------------------------------------------------------
+           Common Inspo Components
+        ------------------------------------------------------------- */
+        /* Clean Inspo White Card */
+        .cws-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: var(--shadow-subtle);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .cws-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: gap;
+        }
+        .cws-card-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+        .cws-card-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Inspo Pill Row for list items */
+        .inspo-pill-item {
+            background-color: var(--pill-bg);
+            border-radius: var(--radius-pill);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            text-decoration: none;
+            color: var(--text-navy);
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .inspo-pill-item:hover {
+            background-color: var(--pill-hover);
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            color: var(--text-navy);
+        }
+        .inspo-pill-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .inspo-pill-eye {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(14, 165, 233, 0.15);
+            color: var(--cyan-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+        .inspo-pill-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--cyan-accent);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            border: none;
+            transition: all 0.2s;
+        }
+        .inspo-pill-btn:hover {
+            transform: scale(1.08);
+            background: #0284c7;
+        }
+
+        /* Hero Banner (Inspo: Green Admin Dashboard JOBNT Theme Card) */
+        .hero-banner-card {
+            background: var(--emerald-gradient);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.3);
+            margin-bottom: 24px;
+        }
+        .hero-banner-card::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            bottom: -30px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            pointer-events: none;
+        }
+        .hero-banner-card::before {
+            content: '';
+            position: absolute;
+            right: 120px;
+            top: -40px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
+        /* Secondary Highlight Card (Inspo: Blue Theme Activation Card) */
+        .activation-card {
+            background: var(--blue-gradient);
+            border-radius: var(--radius-lg);
+            padding: 26px;
+            color: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .activation-card::after {
+            content: '';
+            position: absolute;
+            right: -30px;
+            top: -30px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Pill Buttons & Form Inputs */
+        .btn-cws-emerald {
+            background: var(--emerald-gradient);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 10px 22px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-cws-emerald:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-float);
+        }
+        .btn-cws-light {
+            background: #ffffff;
+            color: var(--text-navy);
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-pill);
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-cws-light:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: var(--text-navy);
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            padding: 11px 16px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--emerald-primary);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Responsive Layout Handling */
+        @media (max-width: 992px) {
+            .app-sidebar {
+                position: fixed;
+                left: -290px;
+                transition: left 0.3s ease;
+            }
+            .app-sidebar.show {
+                left: 0;
+            }
+            .sidebar-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.6);
+                z-index: 1015;
+            }
+            .sidebar-backdrop.show {
+                display: block;
+            }
+            .app-topbar {
+                padding: 14px 20px;
+            }
+            .app-content {
+                padding: 20px 16px 50px 16px;
+            }
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}">
-                CWS Portal
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                {% if request.user.is_authenticated %}
-                    <!-- Main Navigation Links -->
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <!-- FIXED: Changed to compose_memo -->
-                            <a class="nav-link" href="{% url 'compose_memo' %}">Compose</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link position-relative" href="{% url 'inbox' %}">
-                                Inbox
-                                {% if unread_count > 0 %}
-                                    <span class="badge bg-danger rounded-pill ms-1">{{ unread_count }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <!-- FIXED: Changed to # until we build the Sent page -->
-                            <a class="nav-link" href="#">Sent</a>
-                        </li>
-                    </ul>
-                    
-                    <!-- Admin & HOD Tools + Profile -->
-                    <div class="d-flex align-items-center">
-                        
-                        <!-- HOD Links -->
-                        {% if request.user.is_superuser or request.user.role == 'HOD' or request.user.role == 'ADMIN' %}
-                            <!-- FIXED: Changed approvals to # until we build the Approvals portal -->
-                            <a href="#" class="btn btn-outline-info btn-sm me-2">Message Approvals</a>
-                        {% endif %}
+    <div class="app-wrapper">
 
-                        <!-- Admin Links -->
-                        {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
-                            <a href="{% url 'user_management' %}" class="btn btn-outline-light btn-sm me-2">Account Approvals</a>
-                            <a href="{% url 'role_management' %}" class="btn btn-outline-warning btn-sm me-3">Manage Roles</a>
-                        {% endif %}
-                        
-                        <!-- User Identity & Logout -->
-                        <span class="text-light small me-3">{{ request.user.email }}</span>
-                        <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Logout</a>
+        {% if request.user.is_authenticated %}
+            <!-- Mobile Sidebar Backdrop -->
+            <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+            <!-- Left Navigation Sidebar (Direct Inspo from Left Dark Panel) -->
+            <aside class="app-sidebar" id="appSidebar">
+                <div>
+                    <!-- Brand / App Title -->
+                    <a href="{% url 'dashboard' %}" class="sidebar-brand">
+                        <div class="sidebar-brand-icon">
+                            <i class="bi bi-intersect"></i>
+                        </div>
+                        <div>
+                            <div class="sidebar-brand-title">CWS <span>Portal</span></div>
+                            <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 500;">Council Workspace System</div>
+                        </div>
+                    </a>
+
+                    <!-- Navigation Module -->
+                    <div class="sidebar-widget-card">
+                        <div class="sidebar-widget-title">
+                            <i class="bi bi-grid-fill text-emerald"></i> Main Navigation
+                        </div>
+                        <ul class="sidebar-nav-list">
+                            <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                                <a href="{% url 'dashboard' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-speedometer2"></i>
+                                        <span>Dashboard</span>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'inbox' %}active{% endif %}">
+                                <a href="{% url 'inbox' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-inbox-fill"></i>
+                                        <span>Inbox</span>
+                                    </div>
+                                    {% if sidebar_unread_count > 0 %}
+                                        <span class="badge bg-danger rounded-pill">{{ sidebar_unread_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'sent' or request.resolver_match.url_name == 'sent_messages' %}active{% endif %}">
+                                <a href="{% url 'sent_messages' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-send-fill"></i>
+                                        <span>Outbox / Sent</span>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item {% if 'procurement' in request.resolver_match.url_name %}active{% endif %}">
+                                <a href="{% url 'procurement_dashboard' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-receipt-cutoff"></i>
+                                        <span>Vouchers Pipeline</span>
+                                    </div>
+                                    {% if sidebar_active_vouchers_count > 0 %}
+                                        <span class="badge bg-warning text-dark rounded-pill">{{ sidebar_active_vouchers_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                {% else %}
-                    <!-- Logged Out Links -->
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'register' %}">Register</a>
-                        </li>
-                    </ul>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
 
-    <!-- Main Content Area -->
-    <div class="container mt-4 mb-5">
-        
-        <!-- Django Global Messages/Alerts -->
-        {% if messages %}
-            {% for message in messages %}
-                <!-- Convert Django message tags to Bootstrap alert classes (e.g., error -> danger) -->
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <!-- Workflow & Approvals (HOD / Admin) -->
+                    {% if request.user.is_superuser or request.user.role == 'HOD' or request.user.role == 'ADMIN' %}
+                        <div class="sidebar-widget-card">
+                            <div class="sidebar-widget-title">
+                                <i class="bi bi-shield-check text-info"></i> Approvals &amp; Roles
+                            </div>
+                            <ul class="sidebar-nav-list">
+                                <li class="sidebar-nav-item {% if 'hod' in request.resolver_match.url_name %}active{% endif %}">
+                                    <a href="{% url 'hod_approvals' %}">
+                                        <div class="sidebar-nav-left">
+                                            <i class="bi bi-check2-circle"></i>
+                                            <span>Message Approvals</span>
+                                        </div>
+                                        {% if sidebar_pending_approvals_count > 0 %}
+                                            <span class="badge bg-warning text-dark rounded-pill">{{ sidebar_pending_approvals_count }}</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                                {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+                                    <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
+                                        <a href="{% url 'user_management' %}">
+                                            <div class="sidebar-nav-left">
+                                                <i class="bi bi-person-check-fill"></i>
+                                                <span>Account Approvals</span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'role_management' %}active{% endif %}">
+                                        <a href="{% url 'role_management' %}">
+                                            <div class="sidebar-nav-left">
+                                                <i class="bi bi-people-fill"></i>
+                                                <span>Manage Roles</span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <!-- Inspo: "Our Team Members" Widget -->
+                    <div class="sidebar-widget-card">
+                        <div class="sidebar-widget-title">
+                            <i class="bi bi-people text-cyan"></i>
+                            <span>Department Team</span>
+                        </div>
+                        {% if sidebar_team_members %}
+                            <div class="d-flex flex-column gap-2">
+                                {% for member in sidebar_team_members %}
+                                    <div class="sidebar-member-item">
+                                        <div class="sidebar-member-avatar">
+                                            {{ member.email|slice:":2"|upper }}
+                                        </div>
+                                        <div style="min-width: 0;">
+                                            <div class="sidebar-member-name">{{ member.get_full_name|default:member.username }}</div>
+                                            <div class="sidebar-member-role">{{ member.department.name|default:member.get_role_display }}</div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted small py-1">No other members listed yet.</div>
+                        {% endif %}
+                    </div>
                 </div>
-            {% endfor %}
+
+                <!-- Bottom CTA: Green Pill Compose Button (Inspo: "DOWNLOAD" button) -->
+                <div class="pt-3">
+                    <a href="{% url 'compose_memo' %}" class="sidebar-cta-btn">
+                        <i class="bi bi-pencil-square fs-5"></i>
+                        <span>Compose Memo</span>
+                    </a>
+                </div>
+            </aside>
         {% endif %}
 
-        <!-- Page Specific Content Injected Here -->
-        {% block content %}
-        {% endblock %}
-        
+        <!-- Main Content Area -->
+        <main class="app-main">
+
+            {% if request.user.is_authenticated %}
+                <!-- Top Header Bar -->
+                <header class="app-topbar">
+                    <!-- Left: Mobile Toggle + Welcome Greeting -->
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-light d-lg-none p-2 rounded-3" onclick="toggleSidebar()">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <div class="topbar-greeting">
+                            <span class="status-dot"></span>
+                            <span>Welcome {{ request.user.first_name|default:request.user.username }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Profile Pill + Logout -->
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="topbar-user-pill">
+                            <div class="topbar-user-avatar">
+                                {{ request.user.email|slice:":2"|upper }}
+                            </div>
+                            <div class="topbar-user-info d-none d-sm-block">
+                                <div class="topbar-user-name">{{ request.user.email }}</div>
+                                <div class="topbar-user-role">
+                                    {{ request.user.department.name|default:"General Line" }} &bull; {{ request.user.get_role_display }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2 fw-semibold" title="Sign Out">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </div>
+                </header>
+            {% else %}
+                <!-- Top Header for Logged Out View -->
+                <header class="app-topbar justify-content-between">
+                    <a href="{% url 'login' %}" class="sidebar-brand mb-0 text-dark">
+                        <div class="sidebar-brand-icon">
+                            <i class="bi bi-intersect"></i>
+                        </div>
+                        <span class="fs-4 fw-bold text-dark ms-2">CWS <span class="text-success">Portal</span></span>
+                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'login' %}" class="btn btn-outline-secondary rounded-pill px-4">Login</a>
+                        <a href="{% url 'register' %}" class="btn-cws-emerald">Register</a>
+                    </div>
+                </header>
+            {% endif %}
+
+            <!-- Inner Page Content Container -->
+            <div class="app-content">
+
+                <!-- Django Alerts -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi {% if message.tags == 'error' %}bi-exclamation-octagon-fill text-danger{% elif message.tags == 'success' %}bi-check-circle-fill text-success{% else %}bi-info-circle-fill text-primary{% endif %} fs-5"></i>
+                                <span class="fw-medium">{{ message }}</span>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Child Template Content -->
+                {% block content %}
+                {% endblock %}
+
+            </div>
+
+        </main>
+
     </div>
 
-    <!-- Bootstrap JS (Required for dismissible alerts and mobile menu) -->
+    <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Mobile Drawer Toggle Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar && backdrop) {
+                sidebar.classList.toggle('show');
+                backdrop.classList.toggle('show');
+            }
+        }
+    </script>
 </body>
 </html>

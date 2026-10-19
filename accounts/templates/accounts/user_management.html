@@ -1,62 +1,95 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}User Management - CWS{% endblock %}
+{% block title %}Account Approvals - CWS Portal{% endblock %}
 
 {% block content %}
-<div class="row mt-4">
-    <div class="col-12">
-        <h2 class="mb-4 text-primary">User Management Portal</h2>
-        
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white fs-5 fw-bold">
-                Pending User Approvals
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="fw-bold mb-0 text-dark">User Account Approvals</h2>
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                    {{ unapproved_users|length }} Pending Approval
+                </span>
             </div>
-            <div class="card-body p-0">
-                {% if unapproved_users %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Email</th>
-                                    <th>Date Registered</th>
-                                    <th>Assign Department</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for pending_user in unapproved_users %}
-                                <tr>
-                                    <td>{{ pending_user.email }}</td>
-                                    <td>{{ pending_user.date_joined|date:"M d, Y" }}</td>
-                                    <form method="POST" action="{% url 'user_management' %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="user_id" value="{{ pending_user.id }}">
-                                        
-                                        <td>
-                                            <select name="department_id" class="form-select form-select-sm" required>
-                                                <option value="" disabled selected>Select Department...</option>
-                                                {% for dept in departments %}
-                                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm me-1">Approve</button>
-                                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-sm">Reject</button>
-                                        </td>
-                                    </form>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="p-4 text-center text-muted">
-                        <p class="mb-0">No pending user registrations at this time.</p>
-                    </div>
-                {% endif %}
+            <div class="text-muted small">Authorize new staff registrations and assign official council departments</div>
+        </div>
+
+        <a href="{% url 'role_management' %}" class="btn btn-cws-light">
+            <i class="bi bi-people-fill me-1"></i> Manage Roles
+        </a>
+    </div>
+
+    <!-- Approvals Card -->
+    <div class="cws-card">
+        <div class="cws-card-header">
+            <div>
+                <h4 class="cws-card-title">
+                    <i class="bi bi-person-check-fill text-emerald"></i> Pending Registrations
+                </h4>
+                <div class="cws-card-subtitle">Select a department and approve access to the portal</div>
             </div>
         </div>
+
+        {% if unapproved_users %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-uppercase text-muted">
+                            <th class="py-3">Staff Email</th>
+                            <th class="py-3">Registration Date</th>
+                            <th class="py-3">Assign Council Department</th>
+                            <th class="py-3 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pending_user in unapproved_users %}
+                            <tr>
+                                <td class="fw-bold text-dark py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="inspo-pill-eye bg-secondary bg-opacity-10 text-secondary">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <span>{{ pending_user.email }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">{{ pending_user.date_joined|date:"M d, Y" }}</td>
+                                <form method="POST" action="{% url 'user_management' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="user_id" value="{{ pending_user.id }}">
+                                    
+                                    <td>
+                                        <select name="department_id" class="form-select form-select-sm" style="max-width: 280px;" required>
+                                            <option value="" disabled selected>Assign Department...</option>
+                                            {% for dept in departments %}
+                                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="submit" name="action" value="approve" class="btn btn-cws-emerald btn-sm py-1 px-3 me-1">
+                                            <i class="bi bi-check-lg"></i> Approve
+                                        </button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1">
+                                            <i class="bi bi-x-lg"></i> Reject
+                                        </button>
+                                    </td>
+                                </form>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-shield-check text-success fs-1 d-block mb-3 opacity-75"></i>
+                <h5 class="fw-bold text-dark">All registrations reviewed</h5>
+                <p class="text-muted small mb-0">No pending staff registrations currently awaiting approval.</p>
+            </div>
+        {% endif %}
     </div>
+
 </div>
 {% endblock %}

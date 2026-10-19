@@ -1,0 +1,190 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Procurement & Vouchers Pipeline - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="fw-bold mb-0 text-dark">Procurement &amp; Financial Pipeline</h2>
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                    <i class="bi bi-shield-lock-fill me-1"></i> Multi-Tier Verification
+                </span>
+            </div>
+            <div class="text-muted small">
+                Route: Originating Dept &rarr; CM &rarr; Procurement &rarr; Quotes &amp; Voucher &rarr; CM &rarr; Budget &rarr; Audit &rarr; Pay Office &rarr; Release
+            </div>
+        </div>
+
+        <a href="{% url 'create_procurement_memo' %}" class="btn btn-cws-emerald">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span>Initiate Purchase Memo</span>
+        </a>
+    </div>
+
+    <!-- Actionable Memos Callout (Awaiting current department) -->
+    {% if actionable_memos %}
+        <div class="cws-card border-warning mb-4" style="border-width: 2px;">
+            <div class="cws-card-header mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="inspo-pill-eye bg-warning bg-opacity-20 text-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="cws-card-title text-dark">Action Required By Your Department ({{ actionable_memos|length }})</h4>
+                        <div class="cws-card-subtitle">These financial memos are waiting on your desk for immediate sign-off or document upload</div>
+                    </div>
+                </div>
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold">Urgent Action</span>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+                {% for m in actionable_memos %}
+                    <a href="{% url 'procurement_detail' m.pk %}" class="inspo-pill-item border-warning bg-warning bg-opacity-10">
+                        <div class="inspo-pill-left" style="min-width: 0;">
+                            <div class="inspo-pill-eye bg-warning text-dark">
+                                <i class="bi bi-file-earmark-check-fill"></i>
+                            </div>
+                            <div style="min-width: 0;">
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 380px;">{{ m.title }}</div>
+                                <div class="text-muted small">
+                                    Dept: <strong>{{ m.originating_department.name }}</strong> &bull; {{ m.get_current_status_display }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="text-end d-none d-md-block">
+                                {% if m.final_voucher_amount %}
+                                    <strong class="text-dark d-block">&#8358;{{ m.final_voucher_amount|floatformat:2 }}</strong>
+                                    <span class="text-muted small">Voucher Amount</span>
+                                {% elif m.estimated_amount %}
+                                    <span class="text-dark d-block">&#8358;{{ m.estimated_amount|floatformat:2 }}</span>
+                                    <span class="text-muted small">Estimated</span>
+                                {% endif %}
+                            </div>
+
+                            <span class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3">
+                                Review &amp; Act &rarr;
+                            </span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Pipeline Navigation Tabs Container -->
+    <div class="cws-card p-0 overflow-hidden">
+        <div class="p-4 border-bottom bg-light bg-opacity-50">
+            <ul class="nav nav-pills gap-2" id="memoTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill px-4 py-2 fw-bold" id="dept-tab" data-bs-toggle="tab" data-bs-target="#dept-memos" type="button" role="tab">
+                        <i class="bi bi-building me-1"></i> My Department Requests ({{ my_dept_memos|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-4 py-2 fw-bold" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-memos-tab" type="button" role="tab">
+                        <i class="bi bi-globe2 me-1"></i> Council-Wide Pipeline ({{ all_memos|length }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content p-4" id="memoTabsContent">
+            
+            <!-- My Dept Memos Tab -->
+            <div class="tab-pane fade show active" id="dept-memos" role="tabpanel">
+                {% if my_dept_memos %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for m in my_dept_memos %}
+                            <a href="{% url 'procurement_detail' m.pk %}" class="inspo-pill-item">
+                                <div class="inspo-pill-left" style="min-width: 0;">
+                                    <div class="inspo-pill-eye">
+                                        <i class="bi bi-receipt"></i>
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div class="fw-bold text-dark text-truncate" style="max-width: 360px;">{{ m.title }}</div>
+                                        <div class="text-muted small">
+                                            By {{ m.originating_user.email }} &bull; {{ m.created_at|date:"M d, Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-1">
+                                        {{ m.get_current_status_display }}
+                                    </span>
+
+                                    {% if m.final_voucher_amount %}
+                                        <strong class="text-dark small d-none d-sm-inline">&#8358;{{ m.final_voucher_amount|floatformat:2 }}</strong>
+                                    {% endif %}
+
+                                    <div class="inspo-pill-btn">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-folder2-open fs-1 d-block mb-3 opacity-50"></i>
+                        <h5 class="fw-bold text-dark">No department purchase requests yet</h5>
+                        <p class="text-muted small mb-4">Submit a purchase memo to initiate vendor quotations and voucher calculation.</p>
+                        <a href="{% url 'create_procurement_memo' %}" class="btn btn-cws-emerald">
+                            <i class="bi bi-plus-circle-fill me-1"></i> Initiate Purchase Memo
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- All Council Memos Tab -->
+            <div class="tab-pane fade" id="all-memos-tab" role="tabpanel">
+                {% if all_memos %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for m in all_memos %}
+                            <a href="{% url 'procurement_detail' m.pk %}" class="inspo-pill-item">
+                                <div class="inspo-pill-left" style="min-width: 0;">
+                                    <div class="inspo-pill-eye bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-bank2"></i>
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div class="fw-bold text-dark text-truncate" style="max-width: 340px;">{{ m.title }}</div>
+                                        <div class="text-muted small">
+                                            Origin: <strong>{{ m.originating_department.name }}</strong> &bull; {{ m.created_at|date:"M d, Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-light text-secondary border rounded-pill px-3 py-1">
+                                        {{ m.get_current_status_display }}
+                                    </span>
+
+                                    {% if m.final_voucher_amount %}
+                                        <strong class="text-dark small d-none d-sm-inline">&#8358;{{ m.final_voucher_amount|floatformat:2 }}</strong>
+                                    {% endif %}
+
+                                    <div class="inspo-pill-btn">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <p class="mb-0">No procurement memos currently active across the council.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

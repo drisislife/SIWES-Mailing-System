@@ -1,0 +1,83 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Initiate Purchase Memo - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Navigation Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">Initiate Purchase Memo</h2>
+                    <div class="text-muted small">Step 1: Departmental origin and specification drafting</div>
+                </div>
+                <a href="{% url 'procurement_dashboard' %}" class="btn btn-cws-light">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Pipeline
+                </a>
+            </div>
+
+            <!-- Department Routing Notice -->
+            <div class="alert bg-white border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
+                <div class="sidebar-brand-icon" style="width: 44px; height: 44px; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bi bi-bank"></i>
+                </div>
+                <div class="small">
+                    <strong class="text-dark d-block">Originating Entity: {{ request.user.department.name|default:"Your Department" }}</strong>
+                    <span class="text-muted">Upon submission, this memo will be assigned to your Head of Department for Stage 1 sign-off before advancing to the Council Manager's Office.</span>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="cws-card p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Purchase Memo Title / Item Description</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small mt-1">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Detailed Technical Specifications &amp; Justification</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Estimated Budget Cost (&#8358;)</label>
+                        {{ form.estimated_amount }}
+                        <div class="form-text small text-muted">Initial approximation. Precise voucher figures will be verified after quotes are gathered in Step 4.</div>
+                        {% if form.estimated_amount.errors %}
+                            <div class="text-danger small mt-1">{{ form.estimated_amount.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Attach Official Specification Document (PDF / Doc)</label>
+                        {{ form.memo_document }}
+                        {% if form.memo_document.errors %}
+                            <div class="text-danger small mt-1">{{ form.memo_document.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                        <a href="{% url 'procurement_dashboard' %}" class="btn btn-cws-light">Cancel</a>
+                        <button type="submit" class="btn btn-cws-emerald px-4 py-2">
+                            <span>Submit &amp; Route to HOD</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

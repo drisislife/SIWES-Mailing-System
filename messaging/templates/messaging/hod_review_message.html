@@ -1,105 +1,113 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}Review & Edit Message - CWS{% endblock %}
+{% block title %}Review & Authorize Message - CWS{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4 mb-5">
-    <div class="col-md-10">
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
 
-        <!-- Flash messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <!-- Navigation Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">HOD Review &amp; Decision Desk</h2>
+                    <div class="text-muted small">Authorize or modify staff communication prior to cross-department dispatch</div>
                 </div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- Navigation / Header -->
-        <div class="mb-3">
-            <a href="{% url 'hod_approvals' %}" class="btn btn-outline-secondary btn-sm">&larr; Back to Approvals Portal</a>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <div>
-                <h2 class="mb-1 text-primary fw-bold">Review & Edit Staff Message</h2>
-                <div class="text-muted small">
-                    Make any necessary adjustments to this message prior to approving or rejecting.
-                </div>
+                <a href="{% url 'hod_approvals' %}" class="btn btn-cws-light">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Approvals
+                </a>
             </div>
-            <div>
-                <span class="badge bg-warning text-dark fs-6 px-3 py-2">Pending HOD Approval</span>
-            </div>
-        </div>
 
-        <!-- Meta Information Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-3 bg-light rounded">
-                <div class="row g-2">
+            <!-- Meta Information Inspo Pill Card -->
+            <div class="cws-card mb-4 p-4">
+                <div class="row g-3">
                     <div class="col-md-6">
-                        <strong>Sender (Staff):</strong> {{ message.sender.email }}
-                        <span class="badge bg-secondary ms-1">{{ message.sender.department.name|default:"Unassigned" }}</span>
+                        <div class="inspo-pill-item mb-0">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye bg-secondary bg-opacity-10 text-secondary">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Originating Staff Member</span>
+                                    <span class="fw-bold text-dark">{{ memo.sender.email }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">{{ memo.sender.department.name|default:"Unassigned" }}</span>
+                        </div>
                     </div>
+
                     <div class="col-md-6">
-                        <strong>Recipient:</strong> {{ message.recipient.email }}
-                        <span class="badge bg-primary ms-1">{{ message.recipient.department.name|default:"Unassigned" }}</span>
+                        <div class="inspo-pill-item mb-0">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye bg-primary bg-opacity-10 text-primary">
+                                    <i class="bi bi-person-check"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Target Cross-Dept Recipient</span>
+                                    <span class="fw-bold text-dark">{{ memo.recipient.email }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">{{ memo.recipient.department.name|default:"Unassigned" }}</span>
+                        </div>
                     </div>
-                    <div class="col-12 text-muted small mt-2">
-                        <strong>Submitted on:</strong> {{ message.timestamp|date:"F d, Y \a\t H:i" }}
+
+                    <div class="col-12 text-muted small pt-2 border-top">
+                        <i class="bi bi-clock me-1"></i> <strong>Submitted:</strong> {{ memo.timestamp|date:"F d, Y \a\t H:i" }}
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Editorial Form -->
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 text-dark fw-bold">Edit Message</h5>
-            </div>
-            <div class="card-body p-4">
-                <div class="alert alert-info py-2 small mb-4">
-                    <strong>Note:</strong> Modifying the subject or body below will deliver the updated content to the recipient and record an <strong>"Edited by HOD"</strong> audit notice. The original draft is preserved.
+            <!-- Review & Edit Card -->
+            <div class="cws-card p-4">
+                <div class="alert alert-info rounded-4 border-0 p-3 mb-4 d-flex align-items-center gap-3">
+                    <i class="bi bi-info-circle-fill fs-4 text-info"></i>
+                    <div class="small">
+                        <strong>Editorial Clearance:</strong> As Head of Department, you may edit the text directly before approving. If modified, an official <em>"Edited by HOD"</em> tag will accompany delivery, preserving the staff's original draft in audit records.
+                    </div>
                 </div>
 
-                <form method="POST">
+                <form method="POST" action="{% url 'hod_review' memo.id %}">
                     {% csrf_token %}
 
-                    <!-- Subject Field -->
-                    <div class="mb-3">
-                        <label for="id_subject" class="form-label fw-bold text-dark">Subject</label>
-                        <input type="text" id="id_subject" name="subject" class="form-control form-control-lg" value="{{ message.subject }}" required>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Subject / Reference</label>
+                        <div class="p-3 bg-light rounded-3 border fw-bold text-dark">{{ memo.subject }}</div>
                     </div>
 
-                    <!-- Message Body Field -->
                     <div class="mb-4">
-                        <label for="id_body" class="form-label fw-bold text-dark">Message Body (Editable)</label>
-                        <textarea id="id_body" name="body" class="form-control" rows="10" style="line-height: 1.6; font-size: 1.05rem;" required>{{ message.body }}</textarea>
+                        <label for="id_body" class="form-label small fw-bold text-muted text-uppercase">Memorandum Body (Editable)</label>
+                        <textarea id="id_body" name="body" class="form-control" rows="8" style="line-height: 1.6; font-size: 1rem;" required>{{ memo.body }}</textarea>
                     </div>
 
-                    <!-- HOD Remark / Comment -->
                     <div class="mb-4">
-                        <label for="id_comment" class="form-label fw-bold text-dark">HOD Remark / Audit Comment</label>
-                        <input type="text" id="id_comment" name="hod_comment" class="form-control" placeholder="Add an optional comment (e.g., 'Corrected budget numbers and approved')..." value="{{ message.hod_comment|default:'' }}">
-                        <div class="form-text">This remark will be visible to the sender and recipient on the message detail page.</div>
+                        <label for="id_comment" class="form-label small fw-bold text-muted text-uppercase">HOD Remark / Audit Note</label>
+                        <input type="text" id="id_comment" name="hod_comment" class="form-control"
+                               placeholder="Add a remark (e.g., 'Reviewed figures and approved for release')..."
+                               value="{{ memo.hod_comment|default:'' }}">
+                        <div class="form-text small text-muted">This note is recorded in the permanent dispatch trail.</div>
                     </div>
+
+                    <!-- Hidden decision field -->
+                    <input type="hidden" name="action" id="actionField" value="approve">
 
                     <!-- Action Buttons -->
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
-                        <a href="{% url 'hod_approvals' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <a href="{% url 'hod_approvals' %}" class="btn btn-cws-light">Cancel</a>
                         <div class="d-flex gap-2">
-                            <button type="submit" formaction="{% url 'reject_message' message.id %}" class="btn btn-outline-danger px-4">
-                                Reject Message
+                            <button type="submit" class="btn btn-outline-danger rounded-pill px-4 fw-bold"
+                                    onclick="document.getElementById('actionField').value='reject'">
+                                <i class="bi bi-x-circle me-1"></i> Reject
                             </button>
-                            <button type="submit" formaction="{% url 'approve_message' message.id %}" class="btn btn-success px-4 fw-semibold">
-                                Save Changes & Approve
+                            <button type="submit" class="btn btn-cws-emerald px-4 fw-bold"
+                                    onclick="document.getElementById('actionField').value='approve'">
+                                <i class="bi bi-check-circle-fill me-1"></i> Save Changes &amp; Approve
                             </button>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 {% endblock %}

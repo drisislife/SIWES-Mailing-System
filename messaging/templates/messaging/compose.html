@@ -1,24 +1,79 @@
 {% extends 'accounts/base.html' %}
 
+{% block title %}Compose Memo - CWS Portal{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
+<div class="container-fluid p-0">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Compose a New Memo</h4>
+        <div class="col-lg-8">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">Draft Official Memorandum</h2>
+                    <div class="text-muted small">Inter-departmental and intra-departmental communication desk</div>
                 </div>
-                <div class="card-body">
-                    <form method="POST">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-success">Send Memo</button>
-                            <a href="{% url 'inbox' %}" class="btn btn-outline-secondary">Cancel</a>
-                        </div>
-                    </form>
+                <a href="{% url 'inbox' %}" class="btn btn-cws-light">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Inbox
+                </a>
+            </div>
+
+            <!-- Routing Logic Notice Card -->
+            <div class="alert bg-white border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
+                <div class="sidebar-brand-icon" style="width: 44px; height: 44px; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bi bi-diagram-3-fill"></i>
+                </div>
+                <div class="small">
+                    <strong class="text-dark d-block">Automatic Department Routing Policy:</strong>
+                    <span class="text-muted">Memos to colleagues within your department deliver instantly. Memos to other departments route automatically to your HOD for approval before final dispatch.</span>
                 </div>
             </div>
+
+            <!-- Compose Card -->
+            <div class="cws-card p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.recipient.id_for_label }}">
+                            Select Recipient
+                        </label>
+                        {{ form.recipient }}
+                        {% if form.recipient.errors %}
+                            <div class="text-danger small mt-1">{{ form.recipient.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.subject.id_for_label }}">
+                            Subject / Title
+                        </label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}
+                            <div class="text-danger small mt-1">{{ form.subject.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.body.id_for_label }}">
+                            Memorandum Body
+                        </label>
+                        {{ form.body }}
+                        {% if form.body.errors %}
+                            <div class="text-danger small mt-1">{{ form.body.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                        <a href="{% url 'inbox' %}" class="btn btn-cws-light">Cancel</a>
+                        <button type="submit" class="btn btn-cws-emerald px-4 py-2">
+                            <i class="bi bi-send-fill"></i>
+                            <span>Dispatch Memorandum</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </div>
     </div>
 </div>

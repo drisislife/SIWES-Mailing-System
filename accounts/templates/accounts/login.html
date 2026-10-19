@@ -1,37 +1,80 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}Login - CWS{% endblock %}
+{% block title %}Sign In - CWS Portal{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-5">
-        <div class="card shadow border-0">
-            <div class="card-header bg-white text-center py-3">
-                <h4 class="text-primary mb-0">Login to CWS</h4>
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-md-5 col-lg-4">
+        
+        <div class="text-center mb-4">
+            <div class="sidebar-brand-icon mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem;">
+                <i class="bi bi-intersect"></i>
             </div>
-            <div class="card-body p-4">
+            <h3 class="fw-bold text-dark mb-1">Sign in to CWS Portal</h3>
+            <p class="text-muted small">Enter your official credentials to access the council network</p>
+        </div>
+
+        <div class="cws-card shadow-sm p-4 border-0">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} py-2 small rounded-3" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
                 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2 small rounded-3" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
 
-                <form method="POST">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.email.id_for_label }}">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+                        {{ form.email }}
                     </div>
-                </form>
+                    {% if form.email.errors %}
+                        <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
 
-            </div>
-            <div class="card-footer bg-light text-center py-3">
-                <p class="mb-0">Don't have an account? <a href="{% url 'register' %}" class="text-decoration-none">Register here</a></p>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.password.id_for_label }}">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+                            <i class="bi bi-lock"></i>
+                        </span>
+                        {{ form.password }}
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="sidebar-cta-btn py-3 fs-6">
+                        <span>Sign In to Workspace</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="text-center mt-4 pt-3 border-top">
+                <p class="text-muted small mb-0">
+                    New staff member? <a href="{% url 'register' %}" class="text-success fw-bold text-decoration-none">Create an account</a>
+                </p>
             </div>
         </div>
+
     </div>
 </div>
 {% endblock %}

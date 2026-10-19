@@ -1,0 +1,396 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}{{ memo.title }} - Voucher Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="fw-bold mb-0 text-dark">{{ memo.title }}</h2>
+                <span class="badge bg-primary rounded-pill px-3 py-2">
+                    {{ memo.get_current_status_display }}
+                </span>
+            </div>
+            <div class="text-muted small">
+                Originating Department: <strong>{{ memo.originating_department.name }}</strong> &bull; Initiated by {{ memo.originating_user.email }} on {{ memo.created_at|date:"F d, Y \a\t H:i" }}
+            </div>
+        </div>
+
+        <a href="{% url 'procurement_dashboard' %}" class="btn btn-cws-light">
+            <i class="bi bi-arrow-left me-1"></i> Back to Pipeline
+        </a>
+    </div>
+
+    <div class="row g-4">
+        
+        <!-- Left Column: Memo Overview, Documents & Action Desk -->
+        <div class="col-lg-7">
+            
+            <!-- Memo Specification Card -->
+            <div class="cws-card mb-4">
+                <div class="cws-card-header">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-file-text-fill text-emerald"></i> Memo Overview &amp; Financials
+                        </h4>
+                        <div class="cws-card-subtitle">Official requisition details and calculated figures</div>
+                    </div>
+                    <span class="badge bg-secondary rounded-pill">{{ memo.originating_department.name }}</span>
+                </div>
+
+                <div class="mb-4">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-2">Description &amp; Specifications</label>
+                    <div class="p-4 bg-light rounded-4 text-dark" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.98rem;">{{ memo.description }}</div>
+                </div>
+
+                <!-- Financial Highlights -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="inspo-pill-item mb-0 py-3">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye bg-secondary bg-opacity-10 text-secondary">
+                                    <i class="bi bi-calculator"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Estimated Budget</span>
+                                    <strong class="fs-5 text-dark">
+                                        {% if memo.estimated_amount %}
+                                            &#8358;{{ memo.estimated_amount|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted fs-6">N/A</span>
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="inspo-pill-item mb-0 py-3">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye bg-success bg-opacity-10 text-success">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Final Voucher Amount</span>
+                                    <strong class="fs-5 text-success">
+                                        {% if memo.final_voucher_amount %}
+                                            &#8358;{{ memo.final_voucher_amount|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted fs-6">Pending Quotes</span>
+                                        {% endif %}
+                                    </strong>
+                                    {% if memo.voucher_number %}
+                                        <span class="badge bg-dark rounded-pill ms-1" style="font-size: 0.72rem;">#{{ memo.voucher_number }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attached Documents Pill Rows -->
+                <div>
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-3">Associated Financial Documents</label>
+                    <div class="d-flex flex-column gap-2">
+                        <!-- Memo PDF -->
+                        <div class="inspo-pill-item">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block">Original Specification Attachment</span>
+                                    <span class="text-muted small">Initial purchase requisition doc</span>
+                                </div>
+                            </div>
+                            {% if memo.memo_document %}
+                                <a href="{{ memo.memo_document.url }}" target="_blank" class="btn btn-sm btn-cws-light">
+                                    <i class="bi bi-download me-1"></i> View Doc
+                                </a>
+                            {% else %}
+                                <span class="badge bg-light text-muted border rounded-pill">None</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Vendor Quotes -->
+                        <div class="inspo-pill-item">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye text-primary bg-primary bg-opacity-10">
+                                    <i class="bi bi-card-checklist"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block">Third-Party Quotations</span>
+                                    <span class="text-muted small">Vendor market price bids (Step 4)</span>
+                                </div>
+                            </div>
+                            {% if memo.quotations_document %}
+                                <a href="{{ memo.quotations_document.url }}" target="_blank" class="btn btn-sm btn-cws-light">
+                                    <i class="bi bi-download me-1"></i> View Quotes
+                                </a>
+                            {% else %}
+                                <span class="badge bg-light text-muted border rounded-pill">Pending Step 4</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Voucher Sheet -->
+                        <div class="inspo-pill-item">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye text-success bg-success bg-opacity-10">
+                                    <i class="bi bi-receipt-cutoff"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block">Prepared Payment Voucher</span>
+                                    <span class="text-muted small">Official council voucher sheet</span>
+                                </div>
+                            </div>
+                            {% if memo.voucher_document %}
+                                <a href="{{ memo.voucher_document.url }}" target="_blank" class="btn btn-sm btn-cws-light">
+                                    <i class="bi bi-download me-1"></i> View Voucher
+                                </a>
+                            {% else %}
+                                <span class="badge bg-light text-muted border rounded-pill">Pending Step 4</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Action Desk / Approval Console -->
+            {% if can_act and memo.current_status != 'COMPLETED' and memo.current_status != 'REJECTED' %}
+                <div class="cws-card border-warning mb-4" style="border-width: 2px;">
+                    <div class="cws-card-header mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="inspo-pill-eye bg-warning text-dark">
+                                <i class="bi bi-pen-fill"></i>
+                            </div>
+                            <div>
+                                <h4 class="cws-card-title text-dark">Official Action Desk</h4>
+                                <div class="cws-card-subtitle">{{ memo.get_current_status_display }}</div>
+                            </div>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold">Sign-Off Required</span>
+                    </div>
+
+                    <form method="POST" action="{% url 'advance_procurement_memo' memo.pk %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <!-- Step 4 Specific Fields -->
+                        {% if memo.current_status == 'PENDING_QUOTES_VOUCHER' and quotes_voucher_form %}
+                            <div class="alert alert-info rounded-4 border-0 p-3 mb-4 d-flex align-items-center gap-3">
+                                <i class="bi bi-calculator-fill fs-3 text-info"></i>
+                                <div class="small">
+                                    <strong>Step 4 Requirement:</strong> Obtain third-party market quotations, compute the final voucher amount, and attach both the vendor quote sheet and payment voucher below.
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase">Voucher Number Reference *</label>
+                                    {{ quotes_voucher_form.voucher_number }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase">Calculated Voucher Amount (&#8358;) *</label>
+                                    {{ quotes_voucher_form.final_voucher_amount }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase">Attach Vendor Quotations (PDF/Images)</label>
+                                    {{ quotes_voucher_form.quotations_document }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase">Attach Voucher Sheet (PDF/Doc)</label>
+                                    {{ quotes_voucher_form.voucher_document }}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Official Minute / Audit Note</label>
+                            {{ action_form.comments }}
+                            <div class="form-text small text-muted">Recommendation, vote book reference, or reason for return/rejection.</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                            <button type="submit" name="action_type" value="REJECT" class="btn btn-outline-danger rounded-pill px-4 fw-bold" onclick="return confirm('Are you sure you want to reject / return this procurement request?');">
+                                <i class="bi bi-x-circle me-1"></i> Reject / Return
+                            </button>
+
+                            <button type="submit" name="action_type" value="APPROVE" class="btn btn-cws-emerald px-4 fw-bold">
+                                {% if memo.current_status == 'PENDING_PAY_OFFICE' %}
+                                    <i class="bi bi-cash me-1"></i> Disburse &amp; Release Funds &rarr;
+                                {% elif memo.current_status == 'FUNDS_RELEASED_TO_HOD' %}
+                                    <i class="bi bi-check2-all me-1"></i> Complete Execution &rarr;
+                                {% elif memo.current_status == 'PENDING_QUOTES_VOUCHER' %}
+                                    <i class="bi bi-arrow-up-right-circle me-1"></i> Submit Voucher to CM &rarr;
+                                {% else %}
+                                    <i class="bi bi-check-circle-fill me-1"></i> Sign &amp; Forward to Next Stage &rarr;
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            {% elif not can_act and memo.current_status != 'COMPLETED' and memo.current_status != 'REJECTED' %}
+                <div class="cws-card bg-light border-0 p-4 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-hourglass-split text-muted fs-3"></i>
+                        <div class="small text-muted">
+                            <strong class="text-dark d-block">Currently Awaiting Authority Action:</strong>
+                            This requisition is stationed with <strong>{{ memo.get_current_status_display }}</strong>. You will be alerted when it reaches your desk.
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Right Column: Visual Stage Pipeline & Audit Trail -->
+        <div class="col-lg-5">
+            
+            <!-- 10-Step Pipeline Visualizer Inspo Card -->
+            <div class="cws-card mb-4">
+                <div class="cws-card-header mb-3">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-diagram-3-fill text-cyan"></i> 10-Step Council Track
+                        </h4>
+                        <div class="cws-card-subtitle">Linear sequence required for council funds release</div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2 small">
+                    
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_ORIGINATING_HOD' %}bg-primary text-white border-primary{% endif %}">
+                        <span>1. Originating HOD Approval</span>
+                        {% if memo.current_status != 'PENDING_ORIGINATING_HOD' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% else %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_CM_APPROVAL_1' %}bg-primary text-white border-primary{% endif %}">
+                        <span>2. Council Manager (Memo Sign-off)</span>
+                        {% if memo.current_status == 'PENDING_PROCUREMENT' or memo.current_status == 'PENDING_QUOTES_VOUCHER' or memo.current_status == 'PENDING_CM_APPROVAL_2' or memo.current_status == 'PENDING_BUDGET' or memo.current_status == 'PENDING_AUDIT' or memo.current_status == 'PENDING_PAY_OFFICE' or memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_CM_APPROVAL_1' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_PROCUREMENT' %}bg-primary text-white border-primary{% endif %}">
+                        <span>3. Procurement Department Review</span>
+                        {% if memo.current_status == 'PENDING_QUOTES_VOUCHER' or memo.current_status == 'PENDING_CM_APPROVAL_2' or memo.current_status == 'PENDING_BUDGET' or memo.current_status == 'PENDING_AUDIT' or memo.current_status == 'PENDING_PAY_OFFICE' or memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_PROCUREMENT' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_QUOTES_VOUCHER' %}bg-primary text-white border-primary{% endif %}">
+                        <span>4. Originating Dept (Quotes &amp; Voucher)</span>
+                        {% if memo.current_status == 'PENDING_CM_APPROVAL_2' or memo.current_status == 'PENDING_BUDGET' or memo.current_status == 'PENDING_AUDIT' or memo.current_status == 'PENDING_PAY_OFFICE' or memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_QUOTES_VOUCHER' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_CM_APPROVAL_2' %}bg-primary text-white border-primary{% endif %}">
+                        <span>5. Council Manager (Voucher Approval)</span>
+                        {% if memo.current_status == 'PENDING_BUDGET' or memo.current_status == 'PENDING_AUDIT' or memo.current_status == 'PENDING_PAY_OFFICE' or memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_CM_APPROVAL_2' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_BUDGET' %}bg-primary text-white border-primary{% endif %}">
+                        <span>6. Budget Department Verification</span>
+                        {% if memo.current_status == 'PENDING_AUDIT' or memo.current_status == 'PENDING_PAY_OFFICE' or memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_BUDGET' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_AUDIT' %}bg-primary text-white border-primary{% endif %}">
+                        <span>7. Internal Audit Office Clearance</span>
+                        {% if memo.current_status == 'PENDING_PAY_OFFICE' or memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_AUDIT' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'PENDING_PAY_OFFICE' %}bg-primary text-white border-primary{% endif %}">
+                        <span>8. Pay Office / Treasury Release</span>
+                        {% if memo.current_status == 'FUNDS_RELEASED_TO_HOD' or memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'PENDING_PAY_OFFICE' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'FUNDS_RELEASED_TO_HOD' %}bg-primary text-white border-primary{% endif %}">
+                        <span>9. Funds in Custody of Originating HOD</span>
+                        {% if memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif memo.current_status == 'FUNDS_RELEASED_TO_HOD' %}
+                            <span class="badge bg-white text-primary rounded-pill">Active</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="inspo-pill-item mb-0 py-2 {% if memo.current_status == 'COMPLETED' %}bg-success text-white border-success{% endif %}">
+                        <span>10. Contract Executed &amp; Completed</span>
+                        {% if memo.current_status == 'COMPLETED' %}
+                            <i class="bi bi-patch-check-fill text-white fs-5"></i>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Audit Trail Log Card -->
+            <div class="cws-card">
+                <div class="cws-card-header mb-3">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-journal-text text-secondary"></i> Sign-Off &amp; Audit Trail
+                        </h4>
+                        <div class="cws-card-subtitle">Permanent immutable ledger of all approvals</div>
+                    </div>
+                </div>
+
+                {% if action_logs %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for log in action_logs %}
+                            <div class="p-3 bg-light rounded-4 border">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark small">{{ log.actor.email }}</strong>
+                                    <span class="text-muted small">{{ log.timestamp|date:"M d, H:i" }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-dark rounded-pill" style="font-size: 0.72rem;">{{ log.action }}</span>
+                                    <span class="badge bg-secondary rounded-pill" style="font-size: 0.72rem;">{{ log.actor_department.name|default:"General" }}</span>
+                                </div>
+                                {% if log.comments %}
+                                    <div class="p-2 bg-white rounded-3 border small text-secondary" style="white-space: pre-wrap;">{{ log.comments }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center text-muted small">No audit actions logged yet.</div>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,61 +1,304 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}Dashboard - CWS{% endblock %}
+{% block title %}Dashboard - CWS Council Portal{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <h2 class="mb-4 text-primary">Welcome to your Dashboard</h2>
-        
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white fs-5 fw-bold">
-                User Details
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
-                    <li class="list-group-item"><strong>Username:</strong> {{ user.username }}</li>
-                    <li class="list-group-item">
-                        <strong>Department:</strong> 
-                        {% if user.department %}
-                            <span class="badge bg-secondary">{{ user.department.name }}</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Pending Assignment</span>
-                        {% endif %}
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Role:</strong> 
-                        <span class="badge bg-info text-dark">{{ user.get_role_display }}</span>
-                    </li>
-                </ul>
+<div class="container-fluid p-0">
+
+    <!-- Top Row: Hero Banner & Secondary Highlight Card (Direct Inspo from Image) -->
+    <div class="row g-4 mb-4">
+        <!-- Emerald Green Hero Card (Inspo: "Admin Dashboard JOBNT Theme") -->
+        <div class="col-lg-8">
+            <div class="hero-banner-card h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge bg-white text-success px-3 py-2 rounded-pill fw-bold text-uppercase fs-7 shadow-sm">
+                            <i class="bi bi-shield-fill-check me-1"></i> Council Workspace System
+                        </span>
+                        <span class="badge bg-dark bg-opacity-25 text-white px-3 py-2 rounded-pill fs-7">
+                            v2.4 Production
+                        </span>
+                    </div>
+                    <h2 class="fw-bold mb-2 display-6" style="letter-spacing: -0.5px;">CWS Portal Dashboard</h2>
+                    <p class="text-white text-opacity-90 fs-6 mb-4" style="max-width: 580px;">
+                        Secure inter-departmental document routing, digital memorandums, and verified multi-tier voucher pipeline.
+                    </p>
+                </div>
+
+                <div class="row g-3 pt-2">
+                    <div class="col-sm-4">
+                        <div class="bg-black bg-opacity-20 rounded-4 p-3 backdrop-blur">
+                            <div class="text-white text-opacity-75 small fw-semibold">Active Department</div>
+                            <div class="fs-5 fw-bold text-white text-truncate">{{ user.department.name|default:"General Line" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="bg-black bg-opacity-20 rounded-4 p-3 backdrop-blur">
+                            <div class="text-white text-opacity-75 small fw-semibold">Unread Memos</div>
+                            <div class="fs-5 fw-bold text-white">{{ sidebar_unread_count|default:"0" }} Pending</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="bg-black bg-opacity-20 rounded-4 p-3 backdrop-blur">
+                            <div class="text-white text-opacity-75 small fw-semibold">User Authority</div>
+                            <div class="fs-5 fw-bold text-white">{{ user.get_role_display }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Quick Messaging Actions -->
-        <div class="card shadow-sm border-0 mt-4">
-            <div class="card-header bg-white fs-5 fw-bold text-dark">
-                Quick Actions
-            </div>
-            <div class="card-body p-4">
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'inbox' %}" class="btn btn-primary px-3">
-                        Go to Inbox
+        <!-- Blue Gradient Voucher Highlight Card (Inspo: "Theme Activation Code") -->
+        <div class="col-lg-4">
+            <div class="activation-card h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-wallet2 text-warning fs-4"></i>
+                        <span class="fw-bold text-uppercase fs-7 tracking-wider text-white">Financial Pipeline</span>
+                    </div>
+                    <h4 class="fw-bold text-white mb-2">Voucher Approval Hub</h4>
+                    <p class="text-white text-opacity-80 small mb-4">
+                        Strict 10-step routing from Line Departments to Council Manager, Budget, Audit, and Pay Office.
+                    </p>
+                </div>
+
+                <div>
+                    <!-- Inspo Pill Item Inside Blue Card -->
+                    <a href="{% url 'procurement_dashboard' %}" class="inspo-pill-item bg-white bg-opacity-20 text-white border-0 mb-3 text-decoration-none">
+                        <div class="inspo-pill-left">
+                            <div class="inspo-pill-eye bg-white text-primary">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                            <span class="fw-bold small text-white">Active Vouchers: {{ sidebar_active_vouchers_count|default:"0" }}</span>
+                        </div>
+                        <div class="inspo-pill-btn bg-white text-primary">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
                     </a>
-                    <a href="#" class="btn btn-outline-secondary px-3">
-                        Sent Messages (Soon)
+
+                    <a href="{% url 'create_procurement_memo' %}" class="btn btn-light w-100 rounded-pill py-2 fw-bold text-primary shadow-sm">
+                        <i class="bi bi-plus-circle-fill me-1"></i> New Purchase Memo
                     </a>
-                    <!-- Notice we changed this from compose_message to compose_memo -->
-                    <a href="{% url 'compose_memo' %}" class="btn btn-success px-3">
-                        Compose New Message
-                    </a>
-                    {% if user.role == 'HOD' or user.role == 'ADMIN' or user.is_superuser %}
-                        <a href="#" class="btn btn-warning text-dark fw-semibold px-3">
-                            Approvals Portal (Soon)
-                        </a>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Middle Row: Sectional Cards with Pill Rows (Inspo: Header Section, Hero Area, Magazine Blocks) -->
+    <div class="row g-4">
+        <!-- Left Column: Quick Action Controls & Outbox -->
+        <div class="col-lg-6">
+            <!-- Inspo White Card 1 -->
+            <div class="cws-card">
+                <div class="cws-card-header">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-sliders text-emerald"></i> Communication Controls
+                        </h4>
+                        <div class="cws-card-subtitle">Fast access to memo dispatch and outbox records</div>
+                    </div>
+                    <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">Quick Access</span>
+                </div>
+
+                <!-- Pill Rows -->
+                <a href="{% url 'compose_memo' %}" class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye">
+                            <i class="bi bi-pencil-fill"></i>
+                        </div>
+                        <span class="fw-bold">Compose New Internal Memo</span>
+                    </div>
+                    <div class="inspo-pill-btn">
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                </a>
+
+                <a href="{% url 'inbox' %}" class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye">
+                            <i class="bi bi-inbox-fill"></i>
+                        </div>
+                        <span class="fw-bold">My Inbound Inbox</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if sidebar_unread_count > 0 %}
+                            <span class="badge bg-danger rounded-pill">{{ sidebar_unread_count }} New</span>
+                        {% endif %}
+                        <div class="inspo-pill-btn">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{% url 'sent_messages' %}" class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye">
+                            <i class="bi bi-send-check-fill"></i>
+                        </div>
+                        <span class="fw-bold">Outbox / Dispatched Memos</span>
+                    </div>
+                    <div class="inspo-pill-btn">
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                </a>
+
+                {% if request.user.is_superuser or request.user.role == 'HOD' or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'hod_approvals' %}" class="inspo-pill-item">
+                        <div class="inspo-pill-left">
+                            <div class="inspo-pill-eye text-warning bg-warning bg-opacity-10">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <span class="fw-bold">HOD Departmental Approval Queue</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if sidebar_pending_approvals_count > 0 %}
+                                <span class="badge bg-warning text-dark rounded-pill">{{ sidebar_pending_approvals_count }} Awaiting</span>
+                            {% endif %}
+                            <div class="inspo-pill-btn">
+                                <i class="bi bi-chevron-right"></i>
+                            </div>
+                        </div>
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- Inspo White Card 2: User Identity & Dept Verification -->
+            <div class="cws-card">
+                <div class="cws-card-header">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-person-badge-fill text-primary"></i> Profile &amp; Department Credentials
+                        </h4>
+                        <div class="cws-card-subtitle">Official verified system identity</div>
+                    </div>
+                </div>
+
+                <div class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye"><i class="bi bi-envelope"></i></div>
+                        <div>
+                            <span class="text-muted small d-block">Registered Email</span>
+                            <span class="fw-bold">{{ user.email }}</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Verified</span>
+                </div>
+
+                <div class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye"><i class="bi bi-building"></i></div>
+                        <div>
+                            <span class="text-muted small d-block">Council Department</span>
+                            <span class="fw-bold">{{ user.department.name|default:"Unassigned (Contact Admin)" }}</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">{{ user.department.code|default:"LINE" }}</span>
+                </div>
+
+                <div class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye"><i class="bi bi-award"></i></div>
+                        <div>
+                            <span class="text-muted small d-block">Assigned Role</span>
+                            <span class="fw-bold">{{ user.get_role_display }}</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-dark rounded-pill px-3 py-1">{{ user.role }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Recent Activity Feed with Inspo Pill Rows -->
+        <div class="col-lg-6">
+            <!-- Inspo White Card 3: Recent Received Memos -->
+            <div class="cws-card">
+                <div class="cws-card-header">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-chat-left-text-fill text-cyan"></i> Recent Inbound Memos
+                        </h4>
+                        <div class="cws-card-subtitle">Latest memos delivered to your inbox</div>
+                    </div>
+                    <a href="{% url 'inbox' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">View All</a>
+                </div>
+
+                {% if recent_received %}
+                    {% for memo in recent_received %}
+                        <a href="{% url 'message_detail' memo.id %}" class="inspo-pill-item">
+                            <div class="inspo-pill-left" style="min-width: 0;">
+                                <div class="inspo-pill-eye">
+                                    <i class="bi bi-envelope-paper"></i>
+                                </div>
+                                <div style="min-width: 0;">
+                                    <div class="fw-bold text-truncate" style="max-width: 280px;">{{ memo.subject }}</div>
+                                    <div class="text-muted small">
+                                        From: {{ memo.sender.get_full_name|default:memo.sender.username }} &bull; {{ memo.timestamp|date:"M d, H:i" }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if not memo.is_read %}
+                                    <span class="badge bg-primary rounded-pill">New</span>
+                                {% endif %}
+                                <div class="inspo-pill-btn">
+                                    <i class="bi bi-arrow-right-short fs-5"></i>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <p class="mb-0">No inbound messages received yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Inspo White Card 4: Active Vouchers Tracker -->
+            <div class="cws-card">
+                <div class="cws-card-header">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-clock-history text-warning"></i> Department Procurement Pipeline
+                        </h4>
+                        <div class="cws-card-subtitle">Live tracking of ongoing purchase memos</div>
+                    </div>
+                    <a href="{% url 'procurement_dashboard' %}" class="btn btn-sm btn-outline-warning rounded-pill px-3 text-dark fw-bold">Pipeline Hub</a>
+                </div>
+
+                {% if active_vouchers %}
+                    {% for voucher in active_vouchers %}
+                        <a href="{% url 'procurement_detail' voucher.id %}" class="inspo-pill-item">
+                            <div class="inspo-pill-left" style="min-width: 0;">
+                                <div class="inspo-pill-eye bg-warning bg-opacity-10 text-warning">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                                </div>
+                                <div style="min-width: 0;">
+                                    <div class="fw-bold text-truncate" style="max-width: 260px;">{{ voucher.title }}</div>
+                                    <div class="text-muted small">
+                                        {{ voucher.get_current_status_display }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if voucher.final_voucher_amount %}
+                                    <span class="badge bg-light text-dark border fw-bold">&#8358;{{ voucher.final_voucher_amount|floatformat:2 }}</span>
+                                {% endif %}
+                                <div class="inspo-pill-btn bg-warning text-dark">
+                                    <i class="bi bi-eye-fill"></i>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success opacity-50"></i>
+                        <p class="mb-0">No active vouchers in progress for your department.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

@@ -10,4 +10,10 @@ urlpatterns = [
     # Admin portals
     path('management/', views.user_management_view, name='user_management'),
     path('roles/', views.role_management_view, name='role_management'),
+
+    # Universal Procurement & Voucher Routing Pipeline
+    path('procurement/', views.procurement_dashboard_view, name='procurement_dashboard'),
+    path('procurement/create/', views.create_procurement_memo_view, name='create_procurement_memo'),
+    path('procurement/<int:pk>/', views.procurement_detail_view, name='procurement_detail'),
+    path('procurement/<int:pk>/advance/', views.advance_procurement_memo_view, name='advance_procurement_memo'),
 ]

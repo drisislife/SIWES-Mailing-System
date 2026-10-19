@@ -1,80 +1,94 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}Sent Messages - CWS{% endblock %}
+{% block title %}Outbox / Sent Memos - CWS Portal{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4 mb-5">
-    <div class="col-md-10">
+<div class="container-fluid p-0">
 
-        <!-- Flash messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- Navigation Tabs / Header -->
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <div>
-                <ul class="nav nav-pills">
-                    <li class="nav-item">
-                        <a class="nav-link text-secondary" href="{% url 'inbox' %}">Inbox</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active bg-primary" href="{% url 'sent_messages' %}">Sent Messages</a>
-                    </li>
-                </ul>
-            </div>
-            <a href="{% url 'compose_message' %}" class="btn btn-primary">Compose New Message</a>
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Dispatched Outbox</h2>
+            <div class="text-muted small">Tracking all memorandums and requests initiated by your desk</div>
         </div>
 
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3">
-                <h4 class="mb-0 text-dark fw-bold">Outbox / Sent Messages</h4>
-            </div>
-            <div class="card-body p-0">
-                {% if sent_messages %}
-                    <div class="list-group list-group-flush">
-                        {% for msg in sent_messages %}
-                            <a href="{% url 'message_detail' msg.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3">
-                                <div>
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <h6 class="mb-0 text-dark fw-bold">{{ msg.subject }}</h6>
-                                    </div>
-                                    <div class="text-muted small">
-                                        <strong>To:</strong> {{ msg.recipient.email }}
-                                        <span class="badge bg-light text-secondary border ms-1">{{ msg.recipient.department.name|default:"Unassigned" }}</span>
-                                    </div>
-                                    <small class="text-muted">{{ msg.timestamp|date:"M d, Y, H:i" }}</small>
-                                </div>
-                                <div class="text-end">
-                                    {% if msg.status == 'pending_hod' %}
-                                        <span class="badge bg-warning text-dark">Pending HOD Approval</span>
-                                    {% elif msg.status == 'approved' %}
-                                        <span class="badge bg-success">Delivered</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Rejected</span>
-                                    {% endif %}
-                                    {% if msg.hod_comment %}
-                                        <div class="small text-muted mt-1 fst-italic">Note attached</div>
-                                    {% endif %}
-                                </div>
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="p-5 text-center text-muted">
-                        <h5>No Sent Messages</h5>
-                        <p class="mb-3">You haven't sent any messages yet.</p>
-                        <a href="{% url 'compose_message' %}" class="btn btn-outline-primary btn-sm">Compose your first message</a>
-                    </div>
-                {% endif %}
-            </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'inbox' %}" class="btn btn-cws-light">
+                <i class="bi bi-inbox-fill text-muted me-1"></i> View Inbox
+            </a>
+            <a href="{% url 'compose_memo' %}" class="btn btn-cws-emerald">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>Compose New Memo</span>
+            </a>
         </div>
-
     </div>
+
+    <!-- Messages Container Card -->
+    <div class="cws-card">
+        <div class="cws-card-header">
+            <div>
+                <h4 class="cws-card-title">
+                    <i class="bi bi-send-fill text-cyan"></i> Sent Memorandums
+                </h4>
+                <div class="cws-card-subtitle">Real-time status tracking for all sent items</div>
+            </div>
+            <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                Total: {{ sent_messages|length }} Sent
+            </span>
+        </div>
+
+        {% if sent_messages %}
+            <div class="d-flex flex-column gap-2">
+                {% for msg in sent_messages %}
+                    <a href="{% url 'message_detail' msg.id %}" class="inspo-pill-item">
+                        <div class="inspo-pill-left" style="min-width: 0;">
+                            <div class="inspo-pill-eye">
+                                <i class="bi bi-send"></i>
+                            </div>
+                            <div style="min-width: 0;">
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 380px;">{{ msg.subject }}</div>
+                                <div class="text-muted small">
+                                    <strong>To:</strong> {{ msg.recipient.email }}
+                                    <span class="badge bg-light text-secondary border ms-1 rounded-pill">{{ msg.recipient.department.name|default:"Unassigned" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-muted small d-none d-md-inline">{{ msg.timestamp|date:"M d, Y, H:i" }}</span>
+                            <div>
+                                {% if msg.status == 'pending_hod' %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1">
+                                        <i class="bi bi-hourglass-split me-1"></i> Awaiting HOD
+                                    </span>
+                                {% elif msg.status == 'approved' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                                        <i class="bi bi-check2-all me-1"></i> Delivered
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">
+                                        <i class="bi bi-x-circle me-1"></i> Rejected
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="inspo-pill-btn">
+                                <i class="bi bi-chevron-right"></i>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-send-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">No sent messages yet</h5>
+                <p class="mb-4 text-muted small">When you send a memorandum, it will appear here with live tracking.</p>
+                <a href="{% url 'compose_memo' %}" class="btn btn-cws-emerald">
+                    <i class="bi bi-pencil-fill me-1"></i> Compose First Memo
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
 </div>
 {% endblock %}

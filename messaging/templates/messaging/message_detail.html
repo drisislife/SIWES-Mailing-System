@@ -1,283 +1,170 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}{{ message.subject }} - CWS{% endblock %}
+{% block title %}{{ message.subject }} - CWS Portal{% endblock %}
 
 {% block content %}
-<style>
-@media print {
-    .no-print, nav, .btn, .alert {
-        display: none !important;
-    }
-    .card {
-        border: none !important;
-        box-shadow: none !important;
-    }
-    .print-only-header {
-        display: block !important;
-    }
-}
-.print-only-header {
-    display: none;
-}
-.timeline-step {
-    position: relative;
-    padding-left: 28px;
-}
-.timeline-step::before {
-    content: '';
-    position: absolute;
-    left: 8px;
-    top: 6px;
-    bottom: -15px;
-    width: 2px;
-    background-color: #dee2e6;
-}
-.timeline-step:last-child::before {
-    display: none;
-}
-.timeline-dot {
-    position: absolute;
-    left: 0;
-    top: 4px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-}
-</style>
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
 
-<div class="row justify-content-center mt-4 mb-5">
-    <div class="col-md-9">
-
-        <!-- Flash messages -->
-        {% if messages %}
-            <div class="no-print">
-                {% for message in messages %}
-                    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <!-- Navigation Toolbar -->
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
-            <div class="d-flex align-items-center gap-2">
-                <a href="{% url 'inbox' %}" class="btn btn-outline-secondary btn-sm">&larr; Back to Inbox</a>
-                <a href="{% url 'sent_messages' %}" class="btn btn-outline-secondary btn-sm">Sent Messages</a>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <button onclick="window.print()" class="btn btn-outline-dark btn-sm" title="Print this message as an official memo">
-                    Print Memo
-                </button>
-                {% if is_recipient %}
-                    <form method="POST" action="{% url 'toggle_message_read' message.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">
-                            Mark as Unread
-                        </button>
-                    </form>
-                    <a href="{% url 'compose_message' %}?recipient={{ message.sender.id }}&subject=Re: {{ message.subject }}" class="btn btn-primary btn-sm">
-                        Reply
+            <!-- Action Toolbar (No Print) -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 no-print">
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'inbox' %}" class="btn btn-cws-light">
+                        <i class="bi bi-arrow-left me-1"></i> Inbox
                     </a>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Print-only Official Header -->
-        <div class="print-only-header text-center mb-4 pb-3 border-bottom">
-            <h2 class="fw-bold mb-0">CWS INTERNAL MEMORANDUM</h2>
-            <div class="text-muted small">Departmental Communication Network</div>
-        </div>
-
-        <!-- Message Main Card -->
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h3 class="mb-0 text-dark fw-bold">{{ message.subject }}</h3>
+                    <a href="{% url 'sent_messages' %}" class="btn btn-cws-light">
+                        <i class="bi bi-send me-1"></i> Outbox
+                    </a>
                 </div>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    {% if message.status == 'pending_hod' %}
-                        <span class="badge bg-warning text-dark fs-6">Pending HOD Approval</span>
-                    {% elif message.status == 'approved' %}
-                        <span class="badge bg-success fs-6">Delivered</span>
-                    {% else %}
-                        <span class="badge bg-danger fs-6">Rejected</span>
-                    {% endif %}
 
-                    {% if message.edited_by_hod %}
-                        <span class="badge bg-info text-dark fs-6">Edited by HOD</span>
-                    {% endif %}
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button onclick="window.print()" class="btn btn-cws-light" title="Print official memorandum">
+                        <i class="bi bi-printer me-1"></i> Print Memo
+                    </button>
 
                     {% if is_recipient %}
-                        {% if message.is_read %}
-                            <span class="badge bg-light text-muted border">Read</span>
-                        {% else %}
-                            <span class="badge bg-primary">New / Unread</span>
-                        {% endif %}
+                        <form method="POST" action="{% url 'toggle_message_read' message.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-cws-light">
+                                <i class="bi bi-envelope-open me-1"></i> Mark as {% if message.is_read %}Unread{% else %}Read{% endif %}
+                            </button>
+                        </form>
+                        <a href="{% url 'compose_message' %}?recipient={{ message.sender.id }}&subject=Re: {{ message.subject }}" class="btn btn-cws-emerald">
+                            <i class="bi bi-reply-fill"></i>
+                            <span>Reply</span>
+                        </a>
                     {% endif %}
+
+                    <form action="{% url 'delete_message' message.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this memo?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% if request.user == message.sender %}{% url 'sent_messages' %}{% else %}{% url 'inbox' %}{% endif %}">
+                        <button type="submit" class="btn btn-outline-danger rounded-pill px-3 py-2 fw-semibold">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            <div class="card-body p-4">
-                <!-- Meta Information Block -->
-                <div class="bg-light p-3 rounded border mb-4">
-                    <div class="row g-2">
-                        <div class="col-sm-6">
-                            <span class="text-muted small d-block">From:</span>
-                            <span class="fw-bold text-dark">{{ message.sender.email }}</span>
-                            <span class="badge bg-secondary ms-1">{{ message.sender.department.name|default:"Unassigned" }}</span>
+            <!-- Print Header -->
+            <div class="d-none d-print-block text-center mb-4 pb-3 border-bottom">
+                <h2 class="fw-bold mb-0">CWS COUNCIL INTERNAL MEMORANDUM</h2>
+                <div class="text-muted small">Departmental Document Routing Network</div>
+            </div>
+
+            <!-- Main Memo Card -->
+            <div class="cws-card p-4 p-md-5">
+                <!-- Subject Header -->
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 pb-3 mb-4 border-bottom">
+                    <div>
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1 mb-2">Internal Memo #{{ message.id }}</span>
+                        <h2 class="fw-bold text-dark mb-1">{{ message.subject }}</h2>
+                        <div class="text-muted small">Dispatched: {{ message.timestamp|date:"F d, Y \a\t H:i" }}</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if message.status == 'pending_hod' %}
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                                <i class="bi bi-hourglass-split me-1"></i> Awaiting HOD Approval
+                            </span>
+                        {% elif message.status == 'approved' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
+                                <i class="bi bi-check2-circle me-1"></i> Delivered
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2">
+                                <i class="bi bi-x-circle me-1"></i> Rejected
+                            </span>
+                        {% endif %}
+
+                        {% if message.edited_by_hod %}
+                            <span class="badge bg-info text-dark rounded-pill px-3 py-2">
+                                <i class="bi bi-pen me-1"></i> Edited by HOD
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Sender / Recipient Metadata Inspo Pill Rows -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="inspo-pill-item mb-0">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye bg-secondary bg-opacity-10 text-secondary">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Originating Sender</span>
+                                    <span class="fw-bold text-dark">{{ message.sender.email }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">{{ message.sender.department.name|default:"General Line" }}</span>
                         </div>
-                        <div class="col-sm-6">
-                            <span class="text-muted small d-block">To:</span>
-                            <span class="fw-bold text-dark">{{ message.recipient.email }}</span>
-                            <span class="badge bg-primary ms-1">{{ message.recipient.department.name|default:"Unassigned" }}</span>
-                        </div>
-                        <div class="col-12 text-muted small mt-2 pt-2 border-top">
-                            <strong>Date Sent:</strong> {{ message.timestamp|date:"F d, Y \a\t H:i" }}
-                            {% if is_cross_department %}
-                                <span class="ms-2 badge bg-warning-subtle text-dark border border-warning">Cross-Department Routing</span>
-                            {% else %}
-                                <span class="ms-2 badge bg-success-subtle text-dark border border-success">Intra-Department Routing</span>
-                            {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="inspo-pill-item mb-0">
+                            <div class="inspo-pill-left">
+                                <div class="inspo-pill-eye bg-primary bg-opacity-10 text-primary">
+                                    <i class="bi bi-person-check-fill"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Addressed Recipient</span>
+                                    <span class="fw-bold text-dark">{{ message.recipient.email }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">{{ message.recipient.department.name|default:"General Line" }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Lifecycle & Security Audit Trail (Collapsible or Compact) -->
-                <div class="card bg-white border rounded mb-4 no-print">
-                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-                        <span class="small fw-bold text-secondary">Routing & Gatekeeper Audit Trail</span>
-                        <button class="btn btn-sm btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#auditTrail">
-                            Toggle Details
-                        </button>
-                    </div>
-                    <div class="collapse show" id="auditTrail">
-                        <div class="card-body py-3">
-                            <!-- Step 1 -->
-                            <div class="timeline-step pb-3">
-                                <span class="timeline-dot bg-success"></span>
-                                <div class="small fw-bold text-dark">Message Created & Dispatched</div>
-                                <div class="text-muted small">Sent by {{ message.sender.email }} ({{ message.sender.department.name|default:"No Department" }}) on {{ message.timestamp|date:"M d, Y, H:i" }}.</div>
-                            </div>
-
-                            <!-- Step 2 -->
-                            <div class="timeline-step pb-3">
-                                {% if is_cross_department %}
-                                    {% if message.status == 'approved' %}
-                                        <span class="timeline-dot bg-success"></span>
-                                        <div class="small fw-bold text-success">
-                                            HOD Approval Cleared
-                                            {% if message.edited_by_hod %}
-                                                <span class="badge bg-info text-dark ms-1">Edited by HOD</span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="text-muted small">
-                                            Cross-department clearance granted.
-                                            {% if message.hod_comment %}
-                                                <br><em>Remark: "{{ message.hod_comment }}"</em>
-                                            {% endif %}
-                                        </div>
-                                    {% elif message.status == 'rejected' %}
-                                        <span class="timeline-dot bg-danger"></span>
-                                        <div class="small fw-bold text-danger">Rejected by HOD</div>
-                                        <div class="text-muted small">
-                                            Cross-department clearance denied.
-                                            {% if message.hod_comment %}
-                                                <br><em>Reason: "{{ message.hod_comment }}"</em>
-                                            {% endif %}
-                                        </div>
-                                    {% else %}
-                                        <span class="timeline-dot bg-warning"></span>
-                                        <div class="small fw-bold text-warning">Awaiting HOD Clearance</div>
-                                        <div class="text-muted small">Held by security gatekeeper pending review by the Head of Department.</div>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="timeline-dot bg-success"></span>
-                                    <div class="small fw-bold text-success">Internal Routing (Auto-Cleared)</div>
-                                    <div class="text-muted small">Sender and recipient belong to the same department; no external gatekeeper required.</div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Step 3 -->
-                            <div class="timeline-step">
-                                {% if message.status == 'approved' %}
-                                    <span class="timeline-dot {% if message.is_read %}bg-primary{% else %}bg-secondary{% endif %}"></span>
-                                    <div class="small fw-bold text-dark">
-                                        {% if message.is_read %}
-                                            Delivered & Read
-                                        {% else %}
-                                            Delivered (Awaiting Recipient)
-                                        {% endif %}
-                                    </div>
-                                    <div class="text-muted small">
-                                        Accessible in {{ message.recipient.email }}'s inbox.
-                                    </div>
-                                {% elif message.status == 'pending_hod' %}
-                                    <span class="timeline-dot bg-secondary"></span>
-                                    <div class="small fw-bold text-muted">Delivery Paused</div>
-                                    <div class="text-muted small">Will deliver automatically upon HOD authorization.</div>
-                                {% else %}
-                                    <span class="timeline-dot bg-secondary"></span>
-                                    <div class="small fw-bold text-muted">Delivery Blocked</div>
-                                    <div class="text-muted small">Message was rejected and will not be delivered.</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- HOD Remark Callout Banner -->
+                <!-- HOD Comment Callout (if any) -->
                 {% if message.hod_comment %}
-                    <div class="alert {% if message.status == 'rejected' %}alert-danger{% else %}alert-info{% endif %} mb-4" role="alert">
-                        <strong>HOD Remark:</strong> {{ message.hod_comment }}
+                    <div class="alert {% if message.status == 'rejected' %}alert-danger{% else %}alert-info{% endif %} rounded-4 p-3 mb-4 d-flex align-items-start gap-3">
+                        <i class="bi bi-chat-square-quote-fill fs-4 mt-1"></i>
+                        <div>
+                            <strong class="d-block">HOD Official Remark:</strong>
+                            <span>{{ message.hod_comment }}</span>
+                        </div>
                     </div>
                 {% endif %}
 
-                <!-- Message Body -->
-                <div class="mb-4">
-                    <h5 class="text-secondary mb-3">Message Content</h5>
-                    <div class="p-4 bg-white border rounded" style="white-space: pre-wrap; font-size: 1.05rem; line-height: 1.6; min-height: 140px;">{{ message.body }}</div>
+                <!-- Memorandum Body Content -->
+                <div class="mb-5">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-card-text text-emerald fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">Official Communication Text</h5>
+                    </div>
+                    <div class="p-4 rounded-4 bg-light border" style="white-space: pre-wrap; font-size: 1.05rem; line-height: 1.7; min-height: 180px; color: #1e293b;">
+                        {{ message.body }}
+                    </div>
                 </div>
 
-                <!-- Original Draft Section (if HOD edited) -->
+                <!-- Original Draft Collapse (if HOD modified) -->
                 {% if message.edited_by_hod and message.original_body %}
-                    <div class="card border-info mb-4 no-print">
-                        <div class="card-header bg-info-subtle py-2 d-flex justify-content-between align-items-center">
-                            <span class="small fw-bold text-dark">Staff Original Draft (Before HOD Edits)</span>
-                            <button class="btn btn-sm btn-outline-info text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#originalDraftCollapse">
-                                Show / Hide Original Draft
+                    <div class="cws-card bg-light border mb-4 no-print">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-dark">Original Staff Draft</strong>
+                                <div class="text-muted small">Preserved audit copy before HOD edits</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#originalDraftCollapse">
+                                Toggle Original Copy
                             </button>
                         </div>
-                        <div class="collapse" id="originalDraftCollapse">
-                            <div class="card-body bg-light p-3" style="white-space: pre-wrap; font-size: 0.95rem;">{{ message.original_body }}</div>
+                        <div class="collapse mt-3" id="originalDraftCollapse">
+                            <div class="p-3 bg-white rounded-3 border" style="white-space: pre-wrap; font-size: 0.95rem; color: #475569;">{{ message.original_body }}</div>
                         </div>
                     </div>
                 {% endif %}
 
-                <!-- Footer Actions -->
-                <div class="d-flex justify-content-between align-items-center pt-3 border-top no-print flex-wrap gap-2">
-                    <span class="text-muted small">CWS Role-Based Secure Internal Mailing System</span>
-                    <div class="d-flex gap-2">
-                        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
-                            Print
-                        </button>
-                        {% if is_recipient %}
-                            <a href="{% url 'compose_message' %}?recipient={{ message.sender.id }}&subject=Re: {{ message.subject }}" class="btn btn-primary">
-                                Reply to {{ message.sender.email }}
-                            </a>
-                        {% endif %}
-                    </div>
+                <!-- Security & Audit Footnote -->
+                <div class="d-flex justify-content-between align-items-center pt-4 border-top text-muted small flex-wrap gap-2">
+                    <span><i class="bi bi-shield-lock-fill text-success me-1"></i> End-to-end verified by CWS Role Access Control</span>
+                    <span>Printed/Viewed on: {% now "M d, Y" %}</span>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 {% endblock %}
-
-<form action="{% url 'delete_message' message.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this message?');">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{% if request.user == message.sender %}{% url 'sent_messages' %}{% else %}{% url 'inbox' %}{% endif %}">
-    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-</form>
