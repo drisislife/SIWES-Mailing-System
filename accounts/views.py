@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate, get_user_model
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_protect
 from django.contrib import messages
 from .forms import (
     CustomUserCreationForm, UserLoginForm,
@@ -14,6 +15,7 @@ User = get_user_model()
 
 # ── Auth Views ────────────────────────────────────────────────────────────────
 
+@csrf_protect
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
@@ -37,6 +39,7 @@ def register_view(request):
     return render(request, 'accounts/register.html', {'form': form})
 
 
+@csrf_protect
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')

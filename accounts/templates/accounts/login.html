@@ -23,7 +23,7 @@
                 {% endfor %}
             {% endif %}
 
-            <form method="POST">
+            <form method="POST" action="{% url 'login' %}">
                 {% csrf_token %}
                 
                 {% if form.non_field_errors %}
