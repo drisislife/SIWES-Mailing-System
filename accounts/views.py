@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect
 from django.contrib import messages
 from .forms import (
-    CustomUserCreationForm, UserLoginForm,
+    CustomUserCreationForm, UserLoginForm, UserProfileForm,
     ProcurementMemoCreationForm, QuotesAndVoucherForm, ProcurementActionForm
 )
 from .models import Department, ProcurementMemo, ProcurementActionLog
@@ -52,7 +52,7 @@ def login_view(request):
                 messages.warning(request, 'Your account is pending Admin approval. You cannot log in yet.')
                 return redirect('login')
             login(request, user)
-            messages.success(request, f'Welcome back, {user.email}!')
+            messages.success(request, f'Welcome back, {user.first_name or user.email}!')
             return redirect('dashboard')
     else:
         form = UserLoginForm(request=request)
@@ -65,6 +65,25 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been successfully logged out.')
     return redirect('login')
+
+
+@login_required
+def profile_view(request):
+    """Staff profile page to view and update first name, surname, position, and department."""
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile details have been successfully updated!')
+            return redirect('profile')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = UserProfileForm(instance=request.user)
+
+    return render(request, 'accounts/profile.html', {
+        'form': form,
+    })
 
 
 @login_required

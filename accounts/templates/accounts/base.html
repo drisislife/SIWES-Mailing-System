@@ -644,6 +644,14 @@
                                     {% endif %}
                                 </a>
                             </li>
+                            <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                                <a href="{% url 'profile' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-person-circle"></i>
+                                        <span>My Profile</span>
+                                    </div>
+                                </a>
+                            </li>
                         </ul>
                     </div>
 
@@ -698,7 +706,7 @@
                                 {% for member in sidebar_team_members %}
                                     <div class="sidebar-member-item">
                                         <div class="sidebar-member-avatar">
-                                            {{ member.email|slice:":2"|upper }}
+                                            {% if member.first_name %}{{ member.first_name|slice:":1"|upper }}{{ member.last_name|slice:":1"|upper }}{% else %}{{ member.email|slice:":2"|upper }}{% endif %}
                                         </div>
                                         <div style="min-width: 0;">
                                             <div class="sidebar-member-name">{{ member.get_full_name|default:member.username }}</div>
@@ -736,23 +744,29 @@
                         </button>
                         <div class="topbar-greeting">
                             <span class="status-dot"></span>
-                            <span>Welcome {{ request.user.first_name|default:request.user.username }}</span>
+                            <span>Welcome, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}</span>
                         </div>
                     </div>
 
                     <!-- Right: Profile Pill + Logout -->
                     <div class="d-flex align-items-center gap-2">
-                        <div class="topbar-user-pill">
+                        <a href="{% url 'profile' %}" class="topbar-user-pill text-decoration-none" title="View / Edit Profile">
                             <div class="topbar-user-avatar">
-                                {{ request.user.email|slice:":2"|upper }}
+                                {% if request.user.first_name %}
+                                    {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+                                {% else %}
+                                    {{ request.user.email|slice:":2"|upper }}
+                                {% endif %}
                             </div>
                             <div class="topbar-user-info d-none d-sm-block">
-                                <div class="topbar-user-name">{{ request.user.email }}</div>
+                                <div class="topbar-user-name">
+                                    {% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.email }}{% endif %}
+                                </div>
                                 <div class="topbar-user-role">
                                     {{ request.user.department.name|default:"General Line" }} &bull; {{ request.user.get_role_display }}
                                 </div>
                             </div>
-                        </div>
+                        </a>
 
                         <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2 fw-semibold" title="Sign Out">
                             <i class="bi bi-box-arrow-right me-1"></i> Logout

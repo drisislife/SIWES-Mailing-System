@@ -4,43 +4,113 @@
 
 {% block content %}
 <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="col-md-6 col-lg-5">
+    <div class="col-md-7 col-lg-6">
         
         <div class="text-center mb-4">
             <div class="sidebar-brand-icon mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem;">
                 <i class="bi bi-intersect"></i>
             </div>
-            <h3 class="fw-bold text-dark mb-1">Create Staff Account</h3>
-            <p class="text-muted small">Register your official profile on the council workspace network</p>
+            <h3 class="fw-bold text-dark mb-1">Create Staff Profile</h3>
+            <p class="text-muted small">Register your full name and departmental credentials</p>
         </div>
 
-        <div class="cws-card shadow-sm p-4 border-0">
-            {% if form.errors %}
-                <div class="alert alert-danger rounded-4 py-3 small mb-4" role="alert">
-                    <strong class="d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Registration Notice:</strong>
-                    <ul class="mb-0 ps-3">
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
+        <div class="cws-card shadow-sm p-4 p-md-5 border-0">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger rounded-4 py-2 small mb-4" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
                 </div>
             {% endif %}
 
             <form method="POST" action="{% url 'register' %}" novalidate>
                 {% csrf_token %}
                 
+                <!-- Name and Surname Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.first_name.id_for_label }}">
+                            First Name *
+                        </label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.last_name.id_for_label }}">
+                            Surname / Last Name *
+                        </label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Email Address -->
                 <div class="mb-3">
-                    {{ form.as_p }}
+                    <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.email.id_for_label }}">
+                        Official Email Address *
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+                        {{ form.email }}
+                    </div>
+                    {% if form.email.errors %}
+                        <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Department Selection -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.department.id_for_label }}">
+                        Council Department
+                    </label>
+                    {{ form.department }}
+                    <div class="form-text small text-muted">Select your assigned branch (or leave for Admin to assign).</div>
+                    {% if form.department.errors %}
+                        <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Password 1 -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.password1.id_for_label }}">
+                        Create Password *
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+                            <i class="bi bi-lock"></i>
+                        </span>
+                        {{ form.password1 }}
+                    </div>
+                    {% if form.password1.errors %}
+                        <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Password 2 -->
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.password2.id_for_label }}">
+                        Confirm Password *
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+                            <i class="bi bi-shield-check"></i>
+                        </span>
+                        {{ form.password2 }}
+                    </div>
+                    {% if form.password2.errors %}
+                        <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+                    {% endif %}
                 </div>
 
                 <div class="d-grid mt-4">
                     <button type="submit" class="sidebar-cta-btn py-3 fs-6">
-                        <span>Register Staff Profile</span>
+                        <span>Register Staff Account</span>
                         <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>

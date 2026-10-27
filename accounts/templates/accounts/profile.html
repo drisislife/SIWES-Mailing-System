@@ -1,0 +1,142 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}My Profile - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Top Action Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">Staff Profile &amp; Identity</h2>
+                    <div class="text-muted small">Manage your personal credentials, official name, position, and departmental affiliation</div>
+                </div>
+                <a href="{% url 'dashboard' %}" class="btn btn-cws-light">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Profile Summary Card (Jobnt Inspo Hero Style) -->
+            <div class="cws-card p-4 mb-4">
+                <div class="d-flex align-items-center gap-4 flex-wrap">
+                    <div class="sidebar-member-avatar" style="width: 72px; height: 72px; font-size: 1.8rem; box-shadow: var(--shadow-float);">
+                        {{ user.first_name|default:user.email|slice:":2"|upper }}
+                    </div>
+                    <div style="min-width: 0;">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h3 class="fw-bold text-dark mb-0">{{ user.get_full_name }}</h3>
+                            {% if user.role == 'ADMIN' %}
+                                <span class="badge bg-danger rounded-pill px-3 py-1">Admin / CM</span>
+                            {% elif user.role == 'HOD' %}
+                                <span class="badge bg-info text-dark rounded-pill px-3 py-1">Head of Dept (HOD)</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill px-3 py-1">Staff</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="bi bi-envelope me-1"></i> {{ user.email }}
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-light text-dark border rounded-pill px-3 py-1">
+                                <i class="bi bi-building me-1 text-secondary"></i> {{ user.department.name|default:"Unassigned Department" }}
+                            </span>
+                            {% if user.position %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                                    <i class="bi bi-briefcase me-1"></i> {{ user.position }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Edit Form Card -->
+            <div class="cws-card p-4">
+                <div class="cws-card-header mb-4">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-pencil-square text-emerald"></i> Edit Personal &amp; Departmental Information
+                        </h4>
+                        <div class="cws-card-subtitle">These details are displayed on all memorandums, approvals, and voucher sign-offs</div>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.first_name.id_for_label }}">
+                                First Name
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.last_name.id_for_label }}">
+                                Surname / Last Name
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.position.id_for_label }}">
+                                Position / Designation
+                            </label>
+                            {{ form.position }}
+                            <div class="form-text small text-muted">e.g. Senior ICT Officer, Procurement Lead, Accountant</div>
+                            {% if form.position.errors %}
+                                <div class="text-danger small mt-1">{{ form.position.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.department.id_for_label }}">
+                                Assigned Department
+                            </label>
+                            {{ form.department }}
+                            <div class="form-text small text-muted">Official council branch for your workflows</div>
+                            {% if form.department.errors %}
+                                <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Read-Only Account Identifiers -->
+                    <div class="mb-4 p-3 bg-light rounded-4 border">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Login Email (Account ID)</span>
+                                <strong class="text-dark">{{ user.email }}</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">System Clearance Level</span>
+                                <strong class="text-dark">{{ user.get_role_display }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-cws-light">Cancel</a>
+                        <button type="submit" class="btn btn-cws-emerald px-4 py-2">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Save Profile Changes</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

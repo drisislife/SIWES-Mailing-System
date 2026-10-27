@@ -1,11 +1,104 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import CustomUser, ProcurementMemo
+from .models import CustomUser, ProcurementMemo, Department
 
 class CustomUserCreationForm(UserCreationForm):
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="First Name",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your first name'
+        })
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="Surname / Last Name",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your surname'
+        })
+    )
+    email = forms.EmailField(
+        required=True,
+        label="Official Email Address",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'name@council.gov.ng or email'
+        })
+    )
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        required=False,
+        empty_label="Select Council Department (Optional)",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Department"
+    )
+
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = ('username', 'email')
+        fields = ('first_name', 'last_name', 'email', 'department')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'password1' in self.fields:
+            self.fields['password1'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Create secure password'})
+        if 'password2' in self.fields:
+            self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Confirm password'})
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email address already exists.")
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.first_name = self.cleaned_data['first_name'].strip()
+        user.last_name = self.cleaned_data['last_name'].strip()
+        user.email = self.cleaned_data['email']
+        user.department = self.cleaned_data.get('department')
+        user.username = self.cleaned_data['email']
+        if commit:
+            user.save()
+        return user
+
+
+class UserProfileForm(forms.ModelForm):
+    """Profile editing form for staff to update their names, position, and department."""
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="First Name",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="Surname / Last Name",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    position = forms.CharField(
+        max_length=150,
+        required=False,
+        label="Position / Designation",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Senior ICT Officer, Assistant Director'
+        })
+    )
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Assigned Department"
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'position', 'department']
 
 from django.contrib.auth import authenticate
 

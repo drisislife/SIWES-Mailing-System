@@ -25,11 +25,17 @@ class CustomUser(AbstractUser):
         ('ADMIN', 'Admin/Council Manager'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STAFF')
+    position = models.CharField(max_length=150, blank=True, default='', help_text="Official designation or job title")
     account_approved = models.BooleanField(default=False)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
 
+    def get_full_name(self):
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full if full else (self.username or self.email)
+
     def __str__(self):
-        return f"{self.email} - {self.get_role_display()}"
+        name = self.get_full_name()
+        return f"{name} ({self.email}) - {self.get_role_display()}"
 
 class ProcurementMemo(models.Model):
     STATUS_CHOICES = (
