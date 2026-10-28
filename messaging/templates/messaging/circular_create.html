@@ -1,0 +1,82 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Publish Council Circular - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">Publish Council Circular</h2>
+                    <div class="text-muted small">Broadcast official directives and notifications across the council workspace</div>
+                </div>
+                <a href="{% url 'circulars_list' %}" class="btn btn-cws-light">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Circulars
+                </a>
+            </div>
+
+            <!-- Create Form Card -->
+            <div class="cws-card p-4 p-md-5 shadow-sm">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.title.id_for_label }}">
+                                Circular Title / Directive Heading *
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.priority.id_for_label }}">
+                                Urgency Priority *
+                            </label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                                <div class="text-danger small mt-1">{{ form.priority.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.content.id_for_label }}">
+                            Notice Content / Body *
+                        </label>
+                        {{ form.content }}
+                        {% if form.content.errors %}
+                            <div class="text-danger small mt-1">{{ form.content.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4 p-3 bg-light rounded-4 border">
+                        <label class="form-label small fw-bold text-dark d-flex align-items-center gap-2 mb-1" for="{{ form.attachment.id_for_label }}">
+                            <i class="bi bi-paperclip fs-5 text-emerald"></i>
+                            <span>Attach Circular Document / Signed PDF (Optional)</span>
+                        </label>
+                        {{ form.attachment }}
+                        {% if form.attachment.errors %}
+                            <div class="text-danger small mt-1">{{ form.attachment.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                        <a href="{% url 'circulars_list' %}" class="btn btn-cws-light">Cancel</a>
+                        <button type="submit" class="btn btn-cws-emerald px-4 py-2">
+                            <i class="bi bi-broadcast"></i>
+                            <span>Publish Broadcast Notice</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

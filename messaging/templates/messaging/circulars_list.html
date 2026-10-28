@@ -1,0 +1,86 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Council Circulars &amp; Directives - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Council Circulars &amp; Directives</h2>
+            <div class="text-muted small">Official administrative announcements and council-wide notices</div>
+        </div>
+
+        {% if can_publish %}
+            <a href="{% url 'create_circular' %}" class="btn btn-cws-emerald">
+                <i class="bi bi-megaphone-fill"></i>
+                <span>Publish New Circular</span>
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Circulars List -->
+    <div class="cws-card">
+        <div class="cws-card-header">
+            <div>
+                <h4 class="cws-card-title">
+                    <i class="bi bi-broadcast text-emerald"></i> Active Official Directives
+                </h4>
+                <div class="cws-card-subtitle">Broadcasts published across the council network</div>
+            </div>
+            <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                Total: {{ circulars|length }} Circular{{ circulars|length|pluralize }}
+            </span>
+        </div>
+
+        {% if circulars %}
+            <div class="d-flex flex-column gap-3">
+                {% for circ in circulars %}
+                    <div class="p-4 rounded-4 bg-light border {% if circ.priority == 'URGENT' %}border-danger border-start border-4{% elif circ.priority == 'IMPORTANT' %}border-warning border-start border-4{% else %}border-success border-start border-4{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                {% if circ.priority == 'URGENT' %}
+                                    <span class="badge bg-danger rounded-pill px-3 py-1">Urgent Directive</span>
+                                {% elif circ.priority == 'IMPORTANT' %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Important Notice</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">General Circular</span>
+                                {% endif %}
+                                <h5 class="fw-bold text-dark mb-0">{{ circ.title }}</h5>
+                            </div>
+                            <span class="text-muted small">Published: {{ circ.created_at|date:"F d, Y \a\t H:i" }}</span>
+                        </div>
+
+                        <div class="text-dark mb-3" style="white-space: pre-wrap; font-size: 0.98rem; line-height: 1.6;">{{ circ.content }}</div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top flex-wrap gap-2 text-muted small">
+                            <div>
+                                <i class="bi bi-person-fill text-secondary me-1"></i>
+                                <span>Issued by: <strong>{{ circ.published_by.get_full_name }}</strong> ({{ circ.published_by.department.name|default:"Council Administration" }})</span>
+                            </div>
+                            {% if circ.attachment %}
+                                <a href="{{ circ.attachment.url }}" target="_blank" class="btn btn-sm btn-cws-light" download>
+                                    <i class="bi bi-paperclip me-1"></i> Download Circular Attachment
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-megaphone fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">No active circulars</h5>
+                <p class="mb-4 text-muted small">When council administration publishes official notices, they will appear here.</p>
+                {% if can_publish %}
+                    <a href="{% url 'create_circular' %}" class="btn btn-cws-emerald">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Publish First Circular
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

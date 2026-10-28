@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from messaging.models import Message
+from messaging.models import Message, CouncilCircular
 from accounts.models import ProcurementMemo
 
 User = get_user_model()
@@ -34,6 +34,9 @@ def cws_global_context(request):
         current_status__in=['COMPLETED', 'REJECTED']
     ).count()
 
+    # Active Council Circulars count
+    active_circulars_count = CouncilCircular.objects.filter(is_active=True).count()
+
     # Team members widget (mirroring inspo sidebar)
     # Prefer colleagues in same department, else other staff
     colleagues_qs = User.objects.filter(account_approved=True).exclude(pk=user.pk)
@@ -51,5 +54,6 @@ def cws_global_context(request):
         'sidebar_unread_count': unread_count,
         'sidebar_pending_approvals_count': pending_approvals,
         'sidebar_active_vouchers_count': active_vouchers,
+        'sidebar_circulars_count': active_circulars_count,
         'sidebar_team_members': team_members,
     }

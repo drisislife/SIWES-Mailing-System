@@ -92,6 +92,46 @@
         </div>
     </div>
 
+    <!-- Council Circulars & Administrative Directives Broadcast Row -->
+    {% if active_circulars %}
+        <div class="cws-card p-4 mb-4 border-start border-4 border-warning shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold">
+                        <i class="bi bi-broadcast me-1"></i> Council Circular
+                    </span>
+                    <h5 class="fw-bold mb-0 text-dark">Active Administrative Notices</h5>
+                </div>
+                <a href="{% url 'circulars_list' %}" class="btn btn-sm btn-cws-light">View All Circulars</a>
+            </div>
+            <div class="row g-3">
+                {% for circ in active_circulars %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 bg-light rounded-4 border h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    {% if circ.priority == 'URGENT' %}
+                                        <span class="badge bg-danger rounded-pill fs-8">Urgent</span>
+                                    {% elif circ.priority == 'IMPORTANT' %}
+                                        <span class="badge bg-warning text-dark rounded-pill fs-8">Important</span>
+                                    {% else %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-8">Notice</span>
+                                    {% endif %}
+                                    <strong class="text-dark text-truncate">{{ circ.title }}</strong>
+                                </div>
+                                <p class="text-muted small mb-2 text-truncate" style="max-height: 40px;">{{ circ.content }}</p>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top small text-muted">
+                                <span>{{ circ.published_by.department.name|default:"Admin" }}</span>
+                                <span class="text-muted">{{ circ.created_at|date:"M d" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Middle Row: Sectional Cards with Pill Rows (Inspo: Header Section, Hero Area, Magazine Blocks) -->
     <div class="row g-4">
         <!-- Left Column: Quick Action Controls & Outbox -->
@@ -162,6 +202,23 @@
                     </div>
                     <div class="inspo-pill-btn">
                         <i class="bi bi-chevron-right"></i>
+                    </div>
+                </a>
+
+                <a href="{% url 'circulars_list' %}" class="inspo-pill-item">
+                    <div class="inspo-pill-left">
+                        <div class="inspo-pill-eye">
+                            <i class="bi bi-megaphone-fill"></i>
+                        </div>
+                        <span class="fw-bold">Council Circulars &amp; Directives</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if sidebar_circulars_count > 0 %}
+                            <span class="badge bg-info text-dark rounded-pill">{{ sidebar_circulars_count }} Active</span>
+                        {% endif %}
+                        <div class="inspo-pill-btn">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
                     </div>
                 </a>
 

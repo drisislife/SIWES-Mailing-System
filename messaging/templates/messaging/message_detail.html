@@ -1,22 +1,17 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}{{ message.subject }} - CWS Portal{% endblock %}
+{% block title %}{{ message.subject }} - Memorandum - CWS Portal{% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
     <div class="row justify-content-center">
-        <div class="col-lg-10">
+        <div class="col-lg-9">
 
-            <!-- Action Toolbar (No Print) -->
+            <!-- Top Toolbar -->
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 no-print">
-                <div class="d-flex align-items-center gap-2">
-                    <a href="{% url 'inbox' %}" class="btn btn-cws-light">
-                        <i class="bi bi-arrow-left me-1"></i> Inbox
-                    </a>
-                    <a href="{% url 'sent_messages' %}" class="btn btn-cws-light">
-                        <i class="bi bi-send me-1"></i> Outbox
-                    </a>
-                </div>
+                <a href="{% if request.user == message.sender %}{% url 'sent_messages' %}{% else %}{% url 'inbox' %}{% endif %}" class="btn btn-cws-light">
+                    <i class="bi bi-arrow-left me-1"></i> Back to {% if request.user == message.sender %}Outbox{% else %}Inbox{% endif %}
+                </a>
 
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <button onclick="window.print()" class="btn btn-cws-light" title="Print official memorandum">
@@ -39,27 +34,41 @@
                     <form action="{% url 'delete_message' message.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this memo?');">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{% if request.user == message.sender %}{% url 'sent_messages' %}{% else %}{% url 'inbox' %}{% endif %}">
-                        <button type="submit" class="btn btn-outline-danger rounded-pill px-3 py-2 fw-semibold">
+                        <button type="submit" class="btn btn-outline-danger rounded-pill px-3 py-2 fw-semibold" title="Delete Memo">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </form>
                 </div>
             </div>
 
-            <!-- Print Header -->
-            <div class="d-none d-print-block text-center mb-4 pb-3 border-bottom">
-                <h2 class="fw-bold mb-0">CWS COUNCIL INTERNAL MEMORANDUM</h2>
-                <div class="text-muted small">Departmental Document Routing Network</div>
-            </div>
+            <!-- Print Official Letterhead (visible in print & on screen) -->
+            <div class="cws-card p-4 p-md-5 mb-4 shadow-sm">
+                <div class="text-center pb-4 mb-4 border-bottom">
+                    <div class="sidebar-brand-icon mx-auto mb-2" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                        <i class="bi bi-intersect"></i>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark tracking-wide">COUNCIL WORKSPACE SYSTEM</h3>
+                    <div class="text-uppercase small text-muted fw-bold">Official Internal Memorandum</div>
+                    <div class="text-muted small">Departmental Document Routing &amp; Verification Registry</div>
+                </div>
 
-            <!-- Main Memo Card -->
-            <div class="cws-card p-4 p-md-5">
-                <!-- Subject Header -->
+                <!-- Subject & Status Header -->
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 pb-3 mb-4 border-bottom">
                     <div>
-                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1 mb-2">Internal Memo #{{ message.id }}</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                            <span class="badge bg-light text-dark border rounded-pill px-3 py-1 font-monospace fw-bold">
+                                {{ message.ref_number }}
+                            </span>
+                            {% if message.priority == 'URGENT' %}
+                                <span class="badge bg-danger rounded-pill px-3 py-1">URGENT</span>
+                            {% elif message.priority == 'CONFIDENTIAL' %}
+                                <span class="badge bg-dark rounded-pill px-3 py-1">CONFIDENTIAL</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill px-3 py-1">ROUTINE</span>
+                            {% endif %}
+                        </div>
                         <h2 class="fw-bold text-dark mb-1">{{ message.subject }}</h2>
-                        <div class="text-muted small">Dispatched: {{ message.timestamp|date:"F d, Y \a\t H:i" }}</div>
+                        <div class="text-muted small">Dispatched on: {{ message.timestamp|date:"F d, Y \a\t H:i" }}</div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         {% if message.status == 'pending_hod' %}
@@ -84,7 +93,7 @@
                     </div>
                 </div>
 
-                <!-- Sender / Recipient Metadata Inspo Pill Rows -->
+                <!-- Sender / Recipient Metadata Rows -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="inspo-pill-item mb-0">
@@ -93,14 +102,14 @@
                                     <i class="bi bi-person-fill"></i>
                                 </div>
                                 <div>
-                                    <span class="text-muted small d-block">Originating Sender</span>
+                                    <span class="text-muted small d-block">Originating Officer (From)</span>
                                     <div class="fw-bold text-dark d-flex align-items-center gap-1">
                                         <span>{{ message.sender.get_full_name }}</span>
                                         {% if message.sender.is_verified %}
                                             <i class="bi bi-patch-check-fill text-success" title="Verified Staff Member"></i>
                                         {% endif %}
                                     </div>
-                                    <small class="text-muted">{{ message.sender.email }}</small>
+                                    <small class="text-muted">{{ message.sender.position|default:message.sender.get_role_display }} &bull; {{ message.sender.email }}</small>
                                 </div>
                             </div>
                             <span class="badge bg-secondary rounded-pill">{{ message.sender.department.name|default:"General Line" }}</span>
@@ -114,14 +123,14 @@
                                     <i class="bi bi-person-check-fill"></i>
                                 </div>
                                 <div>
-                                    <span class="text-muted small d-block">Addressed Recipient</span>
+                                    <span class="text-muted small d-block">Addressed Desk (To)</span>
                                     <div class="fw-bold text-dark d-flex align-items-center gap-1">
                                         <span>{{ message.recipient.get_full_name }}</span>
                                         {% if message.recipient.is_verified %}
                                             <i class="bi bi-patch-check-fill text-success" title="Verified Staff Member"></i>
                                         {% endif %}
                                     </div>
-                                    <small class="text-muted">{{ message.recipient.email }}</small>
+                                    <small class="text-muted">{{ message.recipient.position|default:message.recipient.get_role_display }} &bull; {{ message.recipient.email }}</small>
                                 </div>
                             </div>
                             <span class="badge bg-primary rounded-pill">{{ message.recipient.department.name|default:"General Line" }}</span>
@@ -141,38 +150,99 @@
                 {% endif %}
 
                 <!-- Memorandum Body Content -->
-                <div class="mb-5">
+                <div class="mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <i class="bi bi-card-text text-emerald fs-5"></i>
                         <h5 class="fw-bold text-dark mb-0">Official Communication Text</h5>
                     </div>
-                    <div class="p-4 rounded-4 bg-light border" style="white-space: pre-wrap; font-size: 1.05rem; line-height: 1.7; min-height: 180px; color: #1e293b;">
+                    <div class="p-4 rounded-4 bg-light border" style="white-space: pre-wrap; font-size: 1.05rem; line-height: 1.7; min-height: 160px; color: #1e293b;">
                         {{ message.body }}
                     </div>
                 </div>
 
-                <!-- Original Draft Collapse (if HOD modified) -->
-                {% if message.edited_by_hod and message.original_body %}
-                    <div class="cws-card bg-light border mb-4 no-print">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-dark">Original Staff Draft</strong>
-                                <div class="text-muted small">Preserved audit copy before HOD edits</div>
+                <!-- Attached Document Section -->
+                {% if message.attachment %}
+                    <div class="p-3 bg-light rounded-4 border mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 bg-white border p-2 text-primary">
+                                <i class="bi bi-paperclip fs-4"></i>
                             </div>
-                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#originalDraftCollapse">
-                                Toggle Original Copy
-                            </button>
+                            <div>
+                                <strong class="d-block text-dark">Official Attachment Attached</strong>
+                                <span class="text-muted small">{{ message.attachment.name }}</span>
+                            </div>
                         </div>
-                        <div class="collapse mt-3" id="originalDraftCollapse">
-                            <div class="p-3 bg-white rounded-3 border" style="white-space: pre-wrap; font-size: 0.95rem; color: #475569;">{{ message.original_body }}</div>
-                        </div>
+                        <a href="{{ message.attachment.url }}" target="_blank" class="btn btn-cws-light" download>
+                            <i class="bi bi-download me-1"></i> Download Attachment
+                        </a>
                     </div>
                 {% endif %}
 
                 <!-- Security & Audit Footnote -->
-                <div class="d-flex justify-content-between align-items-center pt-4 border-top text-muted small flex-wrap gap-2">
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small flex-wrap gap-2">
                     <span><i class="bi bi-shield-lock-fill text-success me-1"></i> End-to-end verified by CWS Role Access Control</span>
-                    <span>Printed/Viewed on: {% now "M d, Y" %}</span>
+                    <span>Reference: {{ message.ref_number }}</span>
+                </div>
+            </div>
+
+            <!-- Internal Minute & Notation Section -->
+            <div class="cws-card p-4 p-md-5 mb-4 shadow-sm">
+                <div class="cws-card-header mb-4">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-pen-fill text-emerald"></i> Official Minutes &amp; Endorsements
+                        </h4>
+                        <div class="cws-card-subtitle">Official council annotations and progressive minutes on this memorandum</div>
+                    </div>
+                    <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                        {{ minutes|length }} Minute{{ minutes|length|pluralize }}
+                    </span>
+                </div>
+
+                {% if minutes %}
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        {% for min in minutes %}
+                            <div class="p-3 rounded-4 bg-light border border-start border-4 border-emerald">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="sidebar-member-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                            {{ min.officer.first_name|slice:":1"|upper }}{{ min.officer.last_name|slice:":1"|upper }}
+                                        </div>
+                                        <div>
+                                            <strong class="text-dark">{{ min.officer.get_full_name }}</strong>
+                                            <span class="badge bg-white text-secondary border rounded-pill ms-1 px-2">{{ min.officer.department.name|default:"General Line" }} &bull; {{ min.officer.position|default:min.officer.get_role_display }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-muted small">{{ min.created_at|date:"M d, Y \a\t H:i" }}</span>
+                                </div>
+                                <div class="text-dark ps-4" style="white-space: pre-wrap; font-size: 0.95rem;">{{ min.comment }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-muted small py-3 text-center mb-4 bg-light rounded-4 border">
+                        No internal minutes or notations have been added to this memo yet.
+                    </div>
+                {% endif %}
+
+                <!-- Form to Add Minute -->
+                <div class="pt-3 border-top">
+                    <h6 class="fw-bold text-dark mb-2">
+                        <i class="bi bi-pencil-square text-emerald me-1"></i> Add an Official Minute / Endorsement
+                    </h6>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_minute">
+                        <div class="mb-3">
+                            {{ minute_form.comment }}
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-cws-emerald px-4 py-2">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Record Minute</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 

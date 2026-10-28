@@ -644,6 +644,17 @@
                                     {% endif %}
                                 </a>
                             </li>
+                            <li class="sidebar-nav-item {% if 'circular' in request.resolver_match.url_name %}active{% endif %}">
+                                <a href="{% url 'circulars_list' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-megaphone-fill"></i>
+                                        <span>Circulars &amp; Directives</span>
+                                    </div>
+                                    {% if sidebar_circulars_count > 0 %}
+                                        <span class="badge bg-info text-dark rounded-pill">{{ sidebar_circulars_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
                             <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
                                 <a href="{% url 'profile' %}">
                                     <div class="sidebar-nav-left">

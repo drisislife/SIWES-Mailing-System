@@ -23,6 +23,38 @@
         </div>
     </div>
 
+    <!-- Filter & Search Toolbar Card -->
+    <div class="cws-card p-3 mb-4">
+        <form method="GET" action="{% url 'sent_messages' %}" class="row g-2 align-items-center">
+            <div class="col-md-7">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill text-muted ps-3">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 rounded-end-pill" placeholder="Search outbox by subject, reference number, recipient...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="priority" class="form-select rounded-pill">
+                    <option value="">All Priorities</option>
+                    <option value="URGENT" {% if selected_priority == 'URGENT' %}selected{% endif %}>Urgent</option>
+                    <option value="CONFIDENTIAL" {% if selected_priority == 'CONFIDENTIAL' %}selected{% endif %}>Confidential</option>
+                    <option value="ROUTINE" {% if selected_priority == 'ROUTINE' %}selected{% endif %}>Routine</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cws-emerald rounded-pill w-100 py-2">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+                {% if search_query or selected_priority %}
+                    <a href="{% url 'sent_messages' %}" class="btn btn-light border rounded-pill px-3" title="Clear Filter">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
     <!-- Messages Container Card -->
     <div class="cws-card">
         <div class="cws-card-header">
@@ -30,7 +62,13 @@
                 <h4 class="cws-card-title">
                     <i class="bi bi-send-fill text-cyan"></i> Sent Memorandums
                 </h4>
-                <div class="cws-card-subtitle">Real-time status tracking for all sent items</div>
+                <div class="cws-card-subtitle">
+                    {% if search_query or selected_priority %}
+                        Filtered results matching your query
+                    {% else %}
+                        Real-time status tracking for all sent items
+                    {% endif %}
+                </div>
             </div>
             <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
                 Total: {{ sent_messages|length }} Sent
@@ -46,9 +84,26 @@
                                 <i class="bi bi-send"></i>
                             </div>
                             <div style="min-width: 0;">
-                                <div class="fw-bold text-dark text-truncate" style="max-width: 380px;">{{ msg.subject }}</div>
-                                <div class="text-muted small">
-                                    <strong>To:</strong> {{ msg.recipient.email }}
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="badge bg-light text-dark border rounded-pill font-monospace fs-8">{{ msg.ref_number }}</span>
+                                    {% if msg.priority == 'URGENT' %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1 fs-8">Urgent</span>
+                                    {% elif msg.priority == 'CONFIDENTIAL' %}
+                                        <span class="badge bg-dark rounded-pill px-2 py-1 fs-8">Confidential</span>
+                                    {% endif %}
+                                    {% if msg.attachment %}
+                                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 fs-8" title="Contains Attached Document">
+                                            <i class="bi bi-paperclip"></i>
+                                        </span>
+                                    {% endif %}
+                                    <span class="fw-bold text-dark text-truncate" style="max-width: 360px;">{{ msg.subject }}</span>
+                                </div>
+                                <div class="text-muted small d-flex align-items-center gap-1 flex-wrap">
+                                    <strong>To:</strong> 
+                                    <span>{{ msg.recipient.get_full_name }}</span>
+                                    {% if msg.recipient.is_verified %}
+                                        <i class="bi bi-patch-check-fill text-success" title="Verified Staff"></i>
+                                    {% endif %}
                                     <span class="badge bg-light text-secondary border ms-1 rounded-pill">{{ msg.recipient.department.name|default:"Unassigned" }}</span>
                                 </div>
                             </div>
@@ -83,9 +138,13 @@
                 <i class="bi bi-send-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
                 <h5 class="fw-bold text-dark">No sent messages yet</h5>
                 <p class="mb-4 text-muted small">When you send a memorandum, it will appear here with live tracking.</p>
-                <a href="{% url 'compose_memo' %}" class="btn btn-cws-emerald">
-                    <i class="bi bi-pencil-fill me-1"></i> Compose First Memo
-                </a>
+                {% if search_query or selected_priority %}
+                    <a href="{% url 'sent_messages' %}" class="btn btn-cws-light">Clear Filters</a>
+                {% else %}
+                    <a href="{% url 'compose_memo' %}" class="btn btn-cws-emerald">
+                        <i class="bi bi-pencil-fill me-1"></i> Compose First Memo
+                    </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>

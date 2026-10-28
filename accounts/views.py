@@ -92,7 +92,7 @@ def profile_view(request):
 
 @login_required
 def dashboard_view(request):
-    from messaging.models import Message
+    from messaging.models import Message, CouncilCircular
     from accounts.models import ProcurementMemo
 
     user = request.user
@@ -101,12 +101,12 @@ def dashboard_view(request):
     recent_received = Message.objects.filter(
         recipient=user,
         status='approved'
-    ).order_by('-timestamp')[:5]
+    ).select_related('sender', 'sender__department').order_by('-timestamp')[:5]
 
     # Recent sent memos
     recent_sent = Message.objects.filter(
         sender=user
-    ).order_by('-timestamp')[:4]
+    ).select_related('recipient', 'recipient__department').order_by('-timestamp')[:4]
 
     # Active procurement vouchers
     active_vouchers = ProcurementMemo.objects.filter(
@@ -115,6 +115,9 @@ def dashboard_view(request):
         current_status__in=['COMPLETED', 'REJECTED']
     ).order_by('-updated_at')[:4] if user.department else []
 
+    # Active Council Broadcasts / Circulars
+    active_circulars = CouncilCircular.objects.filter(is_active=True).select_related('published_by', 'published_by__department')[:3]
+
     total_memos_count = Message.objects.filter(recipient=user).count()
     delivered_memos_count = Message.objects.filter(recipient=user, status='approved').count()
 
@@ -122,6 +125,7 @@ def dashboard_view(request):
         'recent_received': recent_received,
         'recent_sent': recent_sent,
         'active_vouchers': active_vouchers,
+        'active_circulars': active_circulars,
         'total_memos_count': total_memos_count,
         'delivered_memos_count': delivered_memos_count,
     })

@@ -1,6 +1,6 @@
 {% extends 'accounts/base.html' %}
 
-{% block title %}Compose Memo - CWS Portal{% endblock %}
+{% block title %}Compose Memorandum - CWS Portal{% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
@@ -18,35 +18,56 @@
                 </a>
             </div>
 
-            <!-- Routing Logic Notice Card -->
-            <div class="alert bg-white border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
-                <div class="sidebar-brand-icon" style="width: 44px; height: 44px; font-size: 1.25rem; flex-shrink: 0;">
-                    <i class="bi bi-diagram-3-fill"></i>
+            <!-- Formal Council Memo Header Preview Box -->
+            <div class="cws-card p-4 mb-4 border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                    <div class="small fw-bold text-uppercase text-muted">
+                        <i class="bi bi-file-earmark-text-fill text-emerald me-1"></i> Council Memo Formatting Reference
+                    </div>
+                    <span class="badge bg-light text-secondary border rounded-pill px-3 py-1 font-monospace">REF: CWS/{{ user.department.name|slice:":4"|upper|default:"DEPT" }}/2026/AUTO</span>
                 </div>
-                <div class="small">
-                    <strong class="text-dark d-block">Automatic Department Routing Policy:</strong>
-                    <span class="text-muted">Memos to colleagues within your department deliver instantly. Memos to other departments route automatically to your HOD for approval before final dispatch.</span>
+                <div class="row g-2 small text-muted">
+                    <div class="col-sm-6">
+                        <strong class="text-dark">FROM:</strong> {{ user.get_full_name }} ({{ user.position|default:user.get_role_display }})
+                    </div>
+                    <div class="col-sm-6">
+                        <strong class="text-dark">DEPARTMENT:</strong> {{ user.department.name|default:"General Administration" }}
+                    </div>
                 </div>
             </div>
 
             <!-- Compose Card -->
-            <div class="cws-card p-4">
-                <form method="POST">
+            <div class="cws-card p-4 p-md-5">
+                <form method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.recipient.id_for_label }}">
-                            Select Recipient
-                        </label>
-                        {{ form.recipient }}
-                        {% if form.recipient.errors %}
-                            <div class="text-danger small mt-1">{{ form.recipient.errors.0 }}</div>
-                        {% endif %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.recipient.id_for_label }}">
+                                Addressed Recipient *
+                            </label>
+                            {{ form.recipient }}
+                            <div class="form-text small text-muted">Select an approved council official or staff colleague.</div>
+                            {% if form.recipient.errors %}
+                                <div class="text-danger small mt-1">{{ form.recipient.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.priority.id_for_label }}">
+                                Urgency / Classification *
+                            </label>
+                            {{ form.priority }}
+                            <div class="form-text small text-muted">Priority classification on destination desk.</div>
+                            {% if form.priority.errors %}
+                                <div class="text-danger small mt-1">{{ form.priority.errors.0 }}</div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.subject.id_for_label }}">
-                            Subject / Title
+                            Memorandum Subject *
                         </label>
                         {{ form.subject }}
                         {% if form.subject.errors %}
@@ -56,11 +77,24 @@
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.body.id_for_label }}">
-                            Memorandum Body
+                            Official Memorandum Body *
                         </label>
                         {{ form.body }}
                         {% if form.body.errors %}
                             <div class="text-danger small mt-1">{{ form.body.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- File Attachment Upload -->
+                    <div class="mb-4 p-3 bg-light rounded-4 border">
+                        <label class="form-label small fw-bold text-dark d-flex align-items-center gap-2 mb-1" for="{{ form.attachment.id_for_label }}">
+                            <i class="bi bi-paperclip fs-5 text-emerald"></i>
+                            <span>Attach Official Document / Scan / Report (Optional)</span>
+                        </label>
+                        <div class="text-muted small mb-2">Supported: PDF, Word document, Excel spreadsheet, or scanned image.</div>
+                        {{ form.attachment }}
+                        {% if form.attachment.errors %}
+                            <div class="text-danger small mt-1">{{ form.attachment.errors.0 }}</div>
                         {% endif %}
                     </div>
 

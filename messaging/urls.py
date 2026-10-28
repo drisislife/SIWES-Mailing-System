@@ -13,4 +13,8 @@ urlpatterns = [
     path('<int:pk>/toggle-read/',       views.toggle_message_read_view,  name='toggle_message_read'),
     path('hod/approvals/',              views.hod_approvals_view,        name='hod_approvals'),
     path('hod/review/<int:pk>/',        views.hod_review_view,           name='hod_review'),
+
+    # Council Broadcast & Circulars
+    path('circulars/',                  views.circulars_list_view,       name='circulars_list'),
+    path('circulars/create/',           views.create_circular_view,      name='create_circular'),
 ]

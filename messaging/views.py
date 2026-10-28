@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from .models import Message
-from .forms import MessageForm
+from django.db.models import Q
+from .models import Message, MessageMinute, CouncilCircular
+from .forms import MessageForm, MessageMinuteForm, CouncilCircularForm
 
 User = get_user_model()
 
@@ -22,11 +23,28 @@ def _is_hod(user):
 
 @login_required
 def inbox_view(request):
-    """All messages delivered to this user."""
+    """All messages delivered to this user with search & priority filtering."""
     received = Message.objects.filter(
         recipient=request.user,
         status='approved'
-    ).order_by('-timestamp')
+    ).select_related('sender', 'recipient', 'sender__department', 'recipient__department').order_by('-timestamp')
+
+    q = request.GET.get('q', '').strip()
+    priority = request.GET.get('priority', '').strip()
+
+    if q:
+        received = received.filter(
+            Q(subject__icontains=q) |
+            Q(body__icontains=q) |
+            Q(ref_number__icontains=q) |
+            Q(sender__first_name__icontains=q) |
+            Q(sender__last_name__icontains=q) |
+            Q(sender__email__icontains=q) |
+            Q(sender__department__name__icontains=q)
+        )
+
+    if priority:
+        received = received.filter(priority=priority)
 
     unread_count = received.filter(is_read=False).count()
 
@@ -34,6 +52,8 @@ def inbox_view(request):
         'memos': received,
         'received_messages': received,
         'unread_count': unread_count,
+        'search_query': q,
+        'selected_priority': priority,
     })
 
 
@@ -43,11 +63,31 @@ def inbox_view(request):
 
 @login_required
 def sent_view(request):
-    """All messages sent by this user."""
-    sent = Message.objects.filter(sender=request.user).order_by('-timestamp')
+    """All messages sent by this user with search & priority filtering."""
+    sent = Message.objects.filter(sender=request.user).select_related('recipient', 'recipient__department').order_by('-timestamp')
+
+    q = request.GET.get('q', '').strip()
+    priority = request.GET.get('priority', '').strip()
+
+    if q:
+        sent = sent.filter(
+            Q(subject__icontains=q) |
+            Q(body__icontains=q) |
+            Q(ref_number__icontains=q) |
+            Q(recipient__first_name__icontains=q) |
+            Q(recipient__last_name__icontains=q) |
+            Q(recipient__email__icontains=q) |
+            Q(recipient__department__name__icontains=q)
+        )
+
+    if priority:
+        sent = sent.filter(priority=priority)
+
     return render(request, 'messaging/sent.html', {
         'memos': sent,
         'sent_messages': sent,
+        'search_query': q,
+        'selected_priority': priority,
     })
 
 
@@ -58,7 +98,7 @@ def sent_view(request):
 @login_required
 def compose_view(request):
     """
-    Compose a new memo.
+    Compose a new memo with priority, file attachment, and auto reference numbering.
     • Same department → instantly 'approved' (delivered).
     • Different department → 'pending_hod' (HOD of the sender's dept must approve).
     • Unverified accounts cannot compose or dispatch memos.
@@ -71,7 +111,7 @@ def compose_view(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = MessageForm(request.POST)
+        form = MessageForm(request.POST, request.FILES)
         if form.is_valid():
             memo = form.save(commit=False)
             memo.sender = request.user
@@ -81,10 +121,10 @@ def compose_view(request):
 
             if sender_dept and recipient_dept and sender_dept == recipient_dept:
                 memo.status = 'approved'
-                messages.success(request, f'Memo sent to {memo.recipient.get_full_name() or memo.recipient.email}.')
+                messages.success(request, f'Official memo dispatched successfully to {memo.recipient.get_full_name()}.')
             else:
                 memo.status = 'pending_hod'
-                messages.info(request, 'Memo submitted for HOD approval (cross-department).')
+                messages.info(request, 'Cross-department memo forwarded to your Head of Department (HOD) for review & endorsement.')
 
             memo.save()
             return redirect('sent_messages')
@@ -92,6 +132,7 @@ def compose_view(request):
         initial = {}
         recipient_id = request.GET.get('recipient')
         subject = request.GET.get('subject')
+        priority = request.GET.get('priority')
         if recipient_id:
             try:
                 initial['recipient'] = int(recipient_id)
@@ -99,6 +140,8 @@ def compose_view(request):
                 pass
         if subject:
             initial['subject'] = subject
+        if priority:
+            initial['priority'] = priority
 
         form = MessageForm(initial=initial)
 
@@ -111,7 +154,7 @@ def compose_view(request):
 
 @login_required
 def message_detail_view(request, pk):
-    """View a single message; mark it as read if recipient is viewing."""
+    """View a single message; mark it as read if recipient is viewing; view and add official minutes."""
     memo = get_object_or_404(Message, pk=pk)
 
     # Permission check: sender, recipient, or admin/hod
@@ -124,6 +167,22 @@ def message_detail_view(request, pk):
         memo.is_read = True
         memo.save(update_fields=['is_read'])
 
+    minute_form = MessageMinuteForm()
+    if request.method == 'POST' and request.POST.get('action') == 'add_minute':
+        if not getattr(request.user, 'account_approved', False) and not request.user.is_superuser:
+            messages.warning(request, 'Unverified accounts cannot add official minutes.')
+        else:
+            minute_form = MessageMinuteForm(request.POST)
+            if minute_form.is_valid():
+                minute = minute_form.save(commit=False)
+                minute.message = memo
+                minute.officer = request.user
+                minute.save()
+                messages.success(request, 'Official minute recorded successfully.')
+                return redirect('message_detail', pk=pk)
+
+    minutes = memo.minutes.select_related('officer', 'officer__department').all()
+
     sender_dept_id = getattr(memo.sender, 'department_id', None)
     recipient_dept_id = getattr(memo.recipient, 'department_id', None)
     is_cross_department = (sender_dept_id != recipient_dept_id)
@@ -131,6 +190,8 @@ def message_detail_view(request, pk):
     return render(request, 'messaging/message_detail.html', {
         'memo': memo,
         'message': memo,
+        'minutes': minutes,
+        'minute_form': minute_form,
         'is_recipient': is_recipient,
         'is_cross_department': is_cross_department,
     })
@@ -266,3 +327,38 @@ def delete_message_view(request, pk):
         'message': memo,
         'confirm_delete': True,
     })
+
+
+# ---------------------------------------------------------------------------
+# Council Circulars & Announcements
+# ---------------------------------------------------------------------------
+
+@login_required
+def circulars_list_view(request):
+    """All active council circulars & announcements."""
+    circulars = CouncilCircular.objects.filter(is_active=True).select_related('published_by', 'published_by__department')
+    return render(request, 'messaging/circulars_list.html', {
+        'circulars': circulars,
+        'can_publish': _is_hod(request.user),
+    })
+
+
+@login_required
+def create_circular_view(request):
+    """Publish a new council circular (HOD / Admin only)."""
+    if not _is_hod(request.user):
+        messages.error(request, 'Permission Denied: Only Department Heads or Council Administrators can issue council circulars.')
+        return redirect('circulars_list')
+
+    if request.method == 'POST':
+        form = CouncilCircularForm(request.POST, request.FILES)
+        if form.is_valid():
+            circ = form.save(commit=False)
+            circ.published_by = request.user
+            circ.save()
+            messages.success(request, f'Official Circular "{circ.title}" published to all personnel.')
+            return redirect('circulars_list')
+    else:
+        form = CouncilCircularForm()
+
+    return render(request, 'messaging/circular_create.html', {'form': form})
