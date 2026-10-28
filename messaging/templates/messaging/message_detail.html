@@ -94,7 +94,13 @@
                                 </div>
                                 <div>
                                     <span class="text-muted small d-block">Originating Sender</span>
-                                    <span class="fw-bold text-dark">{{ message.sender.email }}</span>
+                                    <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                        <span>{{ message.sender.get_full_name }}</span>
+                                        {% if message.sender.is_verified %}
+                                            <i class="bi bi-patch-check-fill text-success" title="Verified Staff Member"></i>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">{{ message.sender.email }}</small>
                                 </div>
                             </div>
                             <span class="badge bg-secondary rounded-pill">{{ message.sender.department.name|default:"General Line" }}</span>
@@ -109,7 +115,13 @@
                                 </div>
                                 <div>
                                     <span class="text-muted small d-block">Addressed Recipient</span>
-                                    <span class="fw-bold text-dark">{{ message.recipient.email }}</span>
+                                    <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                        <span>{{ message.recipient.get_full_name }}</span>
+                                        {% if message.recipient.is_verified %}
+                                            <i class="bi bi-patch-check-fill text-success" title="Verified Staff Member"></i>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">{{ message.recipient.email }}</small>
                                 </div>
                             </div>
                             <span class="badge bg-primary rounded-pill">{{ message.recipient.department.name|default:"General Line" }}</span>

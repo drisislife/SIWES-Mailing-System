@@ -40,8 +40,19 @@
                     </div>
                     <div class="col-sm-4">
                         <div class="bg-black bg-opacity-20 rounded-4 p-3 backdrop-blur">
-                            <div class="text-white text-opacity-75 small fw-semibold">User Authority</div>
-                            <div class="fs-5 fw-bold text-white">{{ user.get_role_display }}</div>
+                            <div class="text-white text-opacity-75 small fw-semibold">Authority &amp; Status</div>
+                            <div class="fs-5 fw-bold text-white d-flex align-items-center gap-2 flex-wrap">
+                                <span>{{ user.get_role_display }}</span>
+                                {% if user.is_verified %}
+                                    <span class="badge bg-white text-success rounded-pill px-2 py-1 fs-7 shadow-sm">
+                                        <i class="bi bi-patch-check-fill me-1"></i>Verified
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1 fs-7 shadow-sm">
+                                        <i class="bi bi-hourglass-split me-1"></i>Pending
+                                    </span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>

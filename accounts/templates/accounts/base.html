@@ -766,8 +766,17 @@
                                 {% endif %}
                             </div>
                             <div class="topbar-user-info d-none d-sm-block">
-                                <div class="topbar-user-name">
-                                    {% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.email }}{% endif %}
+                                <div class="topbar-user-name d-flex align-items-center gap-1">
+                                    <span>{% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.email }}{% endif %}</span>
+                                    {% if request.user.is_verified %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.68rem;" title="Verified Staff Member">
+                                            <i class="bi bi-patch-check-fill me-1"></i>Verified
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.68rem;" title="Pending Admin Approval">
+                                            <i class="bi bi-hourglass-split me-1"></i>Pending
+                                        </span>
+                                    {% endif %}
                                 </div>
                                 <div class="topbar-user-role">
                                     {{ request.user.department.name|default:"General Line" }} &bull; {{ request.user.get_role_display }}

@@ -44,10 +44,18 @@
                         <tr>
                             <td class="px-4 py-3">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="sidebar-member-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
-                                        {{ u.email|slice:":2"|upper }}
+                                    <div class="sidebar-member-avatar" style="width: 34px; height: 34px; font-size: 0.75rem;">
+                                        {% if u.first_name %}{{ u.first_name|slice:":1"|upper }}{{ u.last_name|slice:":1"|upper }}{% else %}{{ u.email|slice:":2"|upper }}{% endif %}
                                     </div>
-                                    <span class="fw-bold text-dark">{{ u.email }}</span>
+                                    <div>
+                                        <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                            <span>{{ u.get_full_name }}</span>
+                                            {% if u.is_verified %}
+                                                <i class="bi bi-patch-check-fill text-success" title="Verified Account"></i>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ u.email }}</small>
+                                    </div>
                                 </div>
                             </td>
                             <td>

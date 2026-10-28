@@ -27,6 +27,15 @@
                     <div style="min-width: 0;">
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                             <h3 class="fw-bold text-dark mb-0">{{ user.get_full_name }}</h3>
+                            {% if user.is_verified %}
+                                <span class="badge bg-success text-white rounded-pill px-3 py-1 shadow-sm" title="Account Approved and Verified">
+                                    <i class="bi bi-patch-check-fill me-1"></i>Verified Staff
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-1 shadow-sm" title="Awaiting Administrator Approval">
+                                    <i class="bi bi-hourglass-split me-1"></i>Pending Verification
+                                </span>
+                            {% endif %}
                             {% if user.role == 'ADMIN' %}
                                 <span class="badge bg-danger rounded-pill px-3 py-1">Admin / CM</span>
                             {% elif user.role == 'HOD' %}
@@ -115,13 +124,25 @@
                     <!-- Read-Only Account Identifiers -->
                     <div class="mb-4 p-3 bg-light rounded-4 border">
                         <div class="row g-3">
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <span class="text-muted small d-block">Login Email (Account ID)</span>
                                 <strong class="text-dark">{{ user.email }}</strong>
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <span class="text-muted small d-block">System Clearance Level</span>
                                 <strong class="text-dark">{{ user.get_role_display }}</strong>
+                            </div>
+                            <div class="col-sm-4">
+                                <span class="text-muted small d-block">Account Status</span>
+                                {% if user.is_verified %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-bold">
+                                        <i class="bi bi-patch-check-fill me-1"></i> Verified Account
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1 fw-bold">
+                                        <i class="bi bi-hourglass-split me-1"></i> Pending Verification
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

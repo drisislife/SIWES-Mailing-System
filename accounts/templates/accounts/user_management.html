@@ -52,7 +52,10 @@
                                         <div class="inspo-pill-eye bg-secondary bg-opacity-10 text-secondary">
                                             <i class="bi bi-person"></i>
                                         </div>
-                                        <span>{{ pending_user.email }}</span>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ pending_user.get_full_name }}</div>
+                                            <div class="text-muted small">{{ pending_user.email }}</div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="text-muted small">{{ pending_user.date_joined|date:"M d, Y" }}</td>
@@ -62,9 +65,9 @@
                                     
                                     <td>
                                         <select name="department_id" class="form-select form-select-sm" style="max-width: 280px;" required>
-                                            <option value="" disabled selected>Assign Department...</option>
+                                            <option value="" disabled {% if not pending_user.department %}selected{% endif %}>Assign Department...</option>
                                             {% for dept in departments %}
-                                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                                <option value="{{ dept.id }}" {% if pending_user.department == dept %}selected{% endif %}>{{ dept.name }}</option>
                                             {% endfor %}
                                         </select>
                                     </td>

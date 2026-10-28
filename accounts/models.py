@@ -16,7 +16,7 @@ class Department(models.Model):
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.name} ({self.get_code_display()})"
+        return self.name
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -28,6 +28,10 @@ class CustomUser(AbstractUser):
     position = models.CharField(max_length=150, blank=True, default='', help_text="Official designation or job title")
     account_approved = models.BooleanField(default=False)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
+
+    @property
+    def is_verified(self):
+        return self.account_approved or self.is_superuser
 
     def get_full_name(self):
         full = f"{self.first_name} {self.last_name}".strip()
@@ -87,4 +91,4 @@ class ProcurementActionLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.memo.title} - {self.action} by {self.actor} at {self.timestamp}"
+        return f"{self.memo.title} - {self.action} by {self.actor} at {self.timestamp}"
