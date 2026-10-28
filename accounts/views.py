@@ -249,7 +249,7 @@ def _can_user_act_on_memo(user, memo):
 
     # Step 8: Pay Office / Treasury release
     if status == 'PENDING_PAY_OFFICE':
-        return dept_code == 'PAY_OFFICE' and is_hod
+        return (dept_code in ('PAY_OFFICE', 'BUDGET', 'CM')) and is_hod
 
     # Step 9: Funds released to Originating HOD - HOD acknowledges & contracts
     if status == 'FUNDS_RELEASED_TO_HOD':
