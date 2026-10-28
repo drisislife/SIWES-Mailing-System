@@ -105,9 +105,7 @@
                                     <span class="text-muted small d-block">Originating Officer (From)</span>
                                     <div class="fw-bold text-dark d-flex align-items-center gap-1">
                                         <span>{{ message.sender.get_full_name }}</span>
-                                        {% if message.sender.is_verified %}
-                                            <i class="bi bi-patch-check-fill text-success" title="Verified Staff Member"></i>
-                                        {% endif %}
+                                        {{ message.sender.verification_badge_icon }}
                                     </div>
                                     <small class="text-muted">{{ message.sender.position|default:message.sender.get_role_display }} &bull; {{ message.sender.email }}</small>
                                 </div>
@@ -126,9 +124,7 @@
                                     <span class="text-muted small d-block">Addressed Desk (To)</span>
                                     <div class="fw-bold text-dark d-flex align-items-center gap-1">
                                         <span>{{ message.recipient.get_full_name }}</span>
-                                        {% if message.recipient.is_verified %}
-                                            <i class="bi bi-patch-check-fill text-success" title="Verified Staff Member"></i>
-                                        {% endif %}
+                                        {{ message.recipient.verification_badge_icon }}
                                     </div>
                                     <small class="text-muted">{{ message.recipient.position|default:message.recipient.get_role_display }} &bull; {{ message.recipient.email }}</small>
                                 </div>

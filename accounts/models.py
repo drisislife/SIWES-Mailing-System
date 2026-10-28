@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils.safestring import mark_safe
 
 class Department(models.Model):
     CODE_CHOICES = (
@@ -32,6 +33,29 @@ class CustomUser(AbstractUser):
     @property
     def is_verified(self):
         return self.account_approved or self.is_superuser
+
+    @property
+    def verification_badge_icon(self):
+        """X/Twitter-style verification badge icon reflecting the council administrative hierarchy."""
+        if not self.is_verified:
+            return mark_safe('<i class="bi bi-hourglass-split text-warning" title="Pending Admin Verification"></i>')
+        if self.role == 'ADMIN' or self.is_superuser:
+            # Gold / Amber tick for Council Manager / Administrator
+            return mark_safe('<i class="bi bi-patch-check-fill" style="color: #f59e0b;" title="Verified Council Manager / Admin"></i>')
+        if self.role == 'HOD':
+            # Royal Blue tick for Head of Department (HOD)
+            return mark_safe('<i class="bi bi-patch-check-fill text-primary" title="Verified Head of Department (HOD)"></i>')
+        # Slate Gray tick for verified Staff
+        return mark_safe('<i class="bi bi-patch-check-fill text-secondary" title="Verified Staff"></i>')
+
+    @property
+    def role_badge_class(self):
+        """Bootstrap badge class aligned with council hierarchy colors."""
+        if self.role == 'ADMIN' or self.is_superuser:
+            return 'bg-warning text-dark'
+        if self.role == 'HOD':
+            return 'bg-primary text-white'
+        return 'bg-secondary text-white'
 
     def get_full_name(self):
         full = f"{self.first_name} {self.last_name}".strip()

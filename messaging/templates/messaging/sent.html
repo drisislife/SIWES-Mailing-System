@@ -101,9 +101,7 @@
                                 <div class="text-muted small d-flex align-items-center gap-1 flex-wrap">
                                     <strong>To:</strong> 
                                     <span>{{ msg.recipient.get_full_name }}</span>
-                                    {% if msg.recipient.is_verified %}
-                                        <i class="bi bi-patch-check-fill text-success" title="Verified Staff"></i>
-                                    {% endif %}
+                                    {{ msg.recipient.verification_badge_icon }}
                                     <span class="badge bg-light text-secondary border ms-1 rounded-pill">{{ msg.recipient.department.name|default:"Unassigned" }}</span>
                                 </div>
                             </div>

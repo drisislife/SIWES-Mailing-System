@@ -40,15 +40,7 @@
                             <div class="text-white text-opacity-75 small fw-semibold">Authority &amp; Status</div>
                             <div class="fs-5 fw-bold text-white d-flex align-items-center gap-2 flex-wrap">
                                 <span>{{ user.get_role_display }}</span>
-                                {% if user.is_verified %}
-                                    <span class="badge bg-white text-success rounded-pill px-2 py-1 fs-7 shadow-sm">
-                                        <i class="bi bi-patch-check-fill me-1"></i>Verified
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1 fs-7 shadow-sm">
-                                        <i class="bi bi-hourglass-split me-1"></i>Pending
-                                    </span>
-                                {% endif %}
+                                <span class="fs-5">{{ user.verification_badge_icon }}</span>
                             </div>
                         </div>
                     </div>

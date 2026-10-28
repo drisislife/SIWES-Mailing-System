@@ -720,7 +720,10 @@
                                             {% if member.first_name %}{{ member.first_name|slice:":1"|upper }}{{ member.last_name|slice:":1"|upper }}{% else %}{{ member.email|slice:":2"|upper }}{% endif %}
                                         </div>
                                         <div style="min-width: 0;">
-                                            <div class="sidebar-member-name">{{ member.get_full_name|default:member.username }}</div>
+                                            <div class="sidebar-member-name d-flex align-items-center gap-1">
+                                                <span>{{ member.get_full_name|default:member.username }}</span>
+                                                {{ member.verification_badge_icon }}
+                                            </div>
                                             <div class="sidebar-member-role">{{ member.department.name|default:member.get_role_display }}</div>
                                         </div>
                                     </div>
@@ -779,18 +782,12 @@
                             <div class="topbar-user-info d-none d-sm-block">
                                 <div class="topbar-user-name d-flex align-items-center gap-1">
                                     <span>{% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.email }}{% endif %}</span>
-                                    {% if request.user.is_verified %}
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.68rem;" title="Verified Staff Member">
-                                            <i class="bi bi-patch-check-fill me-1"></i>Verified
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.68rem;" title="Pending Admin Approval">
-                                            <i class="bi bi-hourglass-split me-1"></i>Pending
-                                        </span>
-                                    {% endif %}
+                                    {{ request.user.verification_badge_icon }}
                                 </div>
-                                <div class="topbar-user-role">
-                                    {{ request.user.department.name|default:"General Line" }} &bull; {{ request.user.get_role_display }}
+                                <div class="topbar-user-role d-flex align-items-center gap-1">
+                                    <span>{{ request.user.department.name|default:"General Line" }}</span>
+                                    <span>&bull;</span>
+                                    <span class="badge {{ request.user.role_badge_class }} rounded-pill px-2 py-0" style="font-size: 0.65rem;">{{ request.user.get_role_display }}</span>
                                 </div>
                             </div>
                         </a>

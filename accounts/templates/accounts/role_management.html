@@ -50,9 +50,7 @@
                                     <div>
                                         <div class="fw-bold text-dark d-flex align-items-center gap-1">
                                             <span>{{ u.get_full_name }}</span>
-                                            {% if u.is_verified %}
-                                                <i class="bi bi-patch-check-fill text-success" title="Verified Account"></i>
-                                            {% endif %}
+                                            {{ u.verification_badge_icon }}
                                         </div>
                                         <small class="text-muted">{{ u.email }}</small>
                                     </div>
@@ -64,13 +62,9 @@
                                 </span>
                             </td>
                             <td>
-                                {% if u.role == 'ADMIN' %}
-                                    <span class="badge bg-danger rounded-pill px-3 py-1">Admin / CM</span>
-                                {% elif u.role == 'HOD' %}
-                                    <span class="badge bg-info text-dark rounded-pill px-3 py-1">Head of Dept</span>
-                                {% else %}
-                                    <span class="badge bg-secondary rounded-pill px-3 py-1">Staff</span>
-                                {% endif %}
+                                <span class="badge {{ u.role_badge_class }} rounded-pill px-3 py-1">
+                                    {{ u.get_role_display }}
+                                </span>
                             </td>
                             <td class="px-4 text-end">
                                 <form method="POST" class="d-flex justify-content-end align-items-center gap-2 m-0">
