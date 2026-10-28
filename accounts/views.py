@@ -26,11 +26,12 @@ def register_view(request):
             user = form.save(commit=False)
             user.account_approved = False
             user.save()
-            messages.success(
+            login(request, user)
+            messages.info(
                 request,
-                f'Registration successful for {user.email}! Please wait for an Admin to approve your account.'
+                f'Welcome to CWS, {user.first_name or user.email}! Your registration was successful. Your account is currently pending Administrator verification; you can explore your workspace, but message sending is restricted until an admin verifies your account.'
             )
-            return redirect('login')
+            return redirect('dashboard')
         else:
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
@@ -48,11 +49,14 @@ def login_view(request):
         form = UserLoginForm(request=request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
-            if not getattr(user, 'account_approved', True) and not user.is_superuser:
-                messages.warning(request, 'Your account is pending Admin approval. You cannot log in yet.')
-                return redirect('login')
             login(request, user)
-            messages.success(request, f'Welcome back, {user.first_name or user.email}!')
+            if not getattr(user, 'account_approved', False) and not user.is_superuser:
+                messages.warning(
+                    request,
+                    f'Welcome, {user.first_name or user.email}! Notice: Your account is pending Administrator verification. You cannot compose or dispatch messages until an admin approves your profile.'
+                )
+            else:
+                messages.success(request, f'Welcome back, {user.first_name or user.email}!')
             return redirect('dashboard')
     else:
         form = UserLoginForm(request=request)
@@ -288,6 +292,10 @@ def procurement_dashboard_view(request):
 @login_required
 def create_procurement_memo_view(request):
     """Any staff member from any department can initiate a procurement memo."""
+    if not getattr(request.user, 'account_approved', False) and not request.user.is_superuser:
+        messages.warning(request, "Your account is pending Administrator verification. You cannot initiate procurement memos yet.")
+        return redirect('procurement_dashboard')
+
     if not request.user.department:
         messages.error(request, "You must be assigned to an active department before creating a purchase memo.")
         return redirect('procurement_dashboard')

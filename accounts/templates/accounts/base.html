@@ -723,10 +723,17 @@
 
                 <!-- Bottom CTA: Green Pill Compose Button (Inspo: "DOWNLOAD" button) -->
                 <div class="pt-3">
-                    <a href="{% url 'compose_memo' %}" class="sidebar-cta-btn">
-                        <i class="bi bi-pencil-square fs-5"></i>
-                        <span>Compose Memo</span>
-                    </a>
+                    {% if request.user.account_approved or request.user.is_superuser %}
+                        <a href="{% url 'compose_memo' %}" class="sidebar-cta-btn">
+                            <i class="bi bi-pencil-square fs-5"></i>
+                            <span>Compose Memo</span>
+                        </a>
+                    {% else %}
+                        <button class="sidebar-cta-btn" style="opacity: 0.65; cursor: not-allowed; background: #1c2b47; box-shadow: none;" disabled title="Account pending Administrator verification">
+                            <i class="bi bi-lock-fill fs-5 text-warning"></i>
+                            <span>Pending Verification</span>
+                        </button>
+                    {% endif %}
                 </div>
             </aside>
         {% endif %}
@@ -791,6 +798,21 @@
 
             <!-- Inner Page Content Container -->
             <div class="app-content">
+
+                {% if request.user.is_authenticated and not request.user.account_approved and not request.user.is_superuser %}
+                    <div class="alert alert-warning border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" role="alert">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; min-width: 44px;">
+                                <i class="bi bi-shield-lock-fill fs-4"></i>
+                            </div>
+                            <div>
+                                <strong class="text-dark d-block">Account Pending Administrator Verification</strong>
+                                <span class="text-muted small">Your account is awaiting review and department confirmation by an Administrator. You have view access to your portal, but message composing and dispatch are restricted until your account is verified.</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold">Verification Pending</span>
+                    </div>
+                {% endif %}
 
                 <!-- Django Alerts -->
                 {% if messages %}

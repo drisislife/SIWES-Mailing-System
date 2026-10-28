@@ -101,17 +101,32 @@
                 </div>
 
                 <!-- Pill Rows -->
-                <a href="{% url 'compose_memo' %}" class="inspo-pill-item">
-                    <div class="inspo-pill-left">
-                        <div class="inspo-pill-eye">
-                            <i class="bi bi-pencil-fill"></i>
+                {% if request.user.account_approved or request.user.is_superuser %}
+                    <a href="{% url 'compose_memo' %}" class="inspo-pill-item">
+                        <div class="inspo-pill-left">
+                            <div class="inspo-pill-eye">
+                                <i class="bi bi-pencil-fill"></i>
+                            </div>
+                            <span class="fw-bold">Compose New Internal Memo</span>
                         </div>
-                        <span class="fw-bold">Compose New Internal Memo</span>
+                        <div class="inspo-pill-btn">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                    </a>
+                {% else %}
+                    <div class="inspo-pill-item text-muted" style="opacity: 0.7; cursor: not-allowed;" title="Pending Admin Verification">
+                        <div class="inspo-pill-left">
+                            <div class="inspo-pill-eye bg-warning text-dark">
+                                <i class="bi bi-lock-fill"></i>
+                            </div>
+                            <div>
+                                <span class="fw-bold d-block text-dark">Compose New Internal Memo</span>
+                                <small class="text-warning-emphasis">Locked &bull; Pending Administrator Verification</small>
+                            </div>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill">Locked</span>
                     </div>
-                    <div class="inspo-pill-btn">
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                </a>
+                {% endif %}
 
                 <a href="{% url 'inbox' %}" class="inspo-pill-item">
                     <div class="inspo-pill-left">

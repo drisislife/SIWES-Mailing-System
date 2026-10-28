@@ -61,7 +61,15 @@ def compose_view(request):
     Compose a new memo.
     • Same department → instantly 'approved' (delivered).
     • Different department → 'pending_hod' (HOD of the sender's dept must approve).
+    • Unverified accounts cannot compose or dispatch memos.
     """
+    if not getattr(request.user, 'account_approved', False) and not request.user.is_superuser:
+        messages.warning(
+            request,
+            'Your account is pending Administrator verification. You cannot compose or send messages until an administrator has verified your account.'
+        )
+        return redirect('dashboard')
+
     if request.method == 'POST':
         form = MessageForm(request.POST)
         if form.is_valid():
