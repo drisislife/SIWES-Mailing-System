@@ -45,8 +45,8 @@ class CustomUser(AbstractUser):
         if self.role == 'HOD':
             # Royal Blue tick for Head of Department (HOD)
             return mark_safe('<i class="bi bi-patch-check-fill text-primary" title="Verified Head of Department (HOD)"></i>')
-        # Slate Gray tick for verified Staff
-        return mark_safe('<i class="bi bi-patch-check-fill text-secondary" title="Verified Staff"></i>')
+        # Green tick for verified Staff
+        return mark_safe('<i class="bi bi-patch-check-fill text-success" title="Verified Staff"></i>')
 
     @property
     def role_badge_class(self):
