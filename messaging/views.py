@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from .models import Message, MessageMinute, CouncilCircular
-from .forms import MessageForm, MessageMinuteForm, CouncilCircularForm
+from django.utils import timezone
+from .models import Message, MessageMinute, CouncilCircular, MessageAcknowledgement
+from .forms import MessageForm, MessageMinuteForm, CouncilCircularForm, MessageAcknowledgementForm
 
 User = get_user_model()
 
@@ -27,7 +28,7 @@ def inbox_view(request):
     received = Message.objects.filter(
         recipient=request.user,
         status='approved'
-    ).select_related('sender', 'recipient', 'sender__department', 'recipient__department').order_by('-timestamp')
+    ).select_related('sender', 'recipient', 'sender__department', 'recipient__department', 'acknowledgement', 'parent').order_by('-timestamp')
 
     q = request.GET.get('q', '').strip()
     priority = request.GET.get('priority', '').strip()
@@ -64,7 +65,7 @@ def inbox_view(request):
 @login_required
 def sent_view(request):
     """All messages sent by this user with search & priority filtering."""
-    sent = Message.objects.filter(sender=request.user).select_related('recipient', 'recipient__department').order_by('-timestamp')
+    sent = Message.objects.filter(sender=request.user).select_related('recipient', 'recipient__department', 'acknowledgement', 'parent').order_by('-timestamp')
 
     q = request.GET.get('q', '').strip()
     priority = request.GET.get('priority', '').strip()
@@ -99,6 +100,7 @@ def sent_view(request):
 def compose_view(request):
     """
     Compose a new memo with priority, file attachment, and auto reference numbering.
+    • Supports reply chaining (?parent=<id>).
     • Same department → instantly 'approved' (delivered).
     • Different department → 'pending_hod' (HOD of the sender's dept must approve).
     • Unverified accounts cannot compose or dispatch memos.
@@ -110,11 +112,18 @@ def compose_view(request):
         )
         return redirect('dashboard')
 
+    parent_id = request.POST.get('parent') or request.GET.get('parent')
+    parent_memo = None
+    if parent_id:
+        parent_memo = Message.objects.filter(pk=parent_id).select_related('sender', 'recipient', 'sender__department').first()
+
     if request.method == 'POST':
         form = MessageForm(request.POST, request.FILES)
         if form.is_valid():
             memo = form.save(commit=False)
             memo.sender = request.user
+            if parent_memo:
+                memo.parent = parent_memo
 
             sender_dept = getattr(request.user, 'department', None)
             recipient_dept = getattr(memo.recipient, 'department', None)
@@ -133,19 +142,35 @@ def compose_view(request):
         recipient_id = request.GET.get('recipient')
         subject = request.GET.get('subject')
         priority = request.GET.get('priority')
-        if recipient_id:
+
+        if not recipient_id and parent_memo:
+            if parent_memo.recipient == request.user:
+                initial['recipient'] = parent_memo.sender_id
+            elif parent_memo.sender == request.user:
+                initial['recipient'] = parent_memo.recipient_id
+        elif recipient_id:
             try:
                 initial['recipient'] = int(recipient_id)
             except ValueError:
                 pass
-        if subject:
+
+        if not subject and parent_memo:
+            clean_sub = parent_memo.subject.replace('Re: ', '').replace('RE: ', '')
+            initial['subject'] = f"Re: {clean_sub}"
+        elif subject:
             initial['subject'] = subject
-        if priority:
+
+        if not priority and parent_memo:
+            initial['priority'] = parent_memo.priority
+        elif priority:
             initial['priority'] = priority
 
         form = MessageForm(initial=initial)
 
-    return render(request, 'messaging/compose.html', {'form': form})
+    return render(request, 'messaging/compose.html', {
+        'form': form,
+        'parent_memo': parent_memo,
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -154,8 +179,10 @@ def compose_view(request):
 
 @login_required
 def message_detail_view(request, pk):
-    """View a single message; mark it as read if recipient is viewing; view and add official minutes."""
-    memo = get_object_or_404(Message, pk=pk)
+    """View a single message; mark it as read & record read receipt; view and add official minutes; acknowledge receipt; view reply thread."""
+    memo = get_object_or_404(Message.objects.select_related(
+        'sender', 'recipient', 'sender__department', 'recipient__department', 'parent'
+    ), pk=pk)
 
     # Permission check: sender, recipient, or admin/hod
     if request.user not in (memo.sender, memo.recipient) and not request.user.is_superuser and not _is_hod(request.user):
@@ -163,25 +190,55 @@ def message_detail_view(request, pk):
         return redirect('inbox')
 
     is_recipient = (request.user == memo.recipient)
-    if is_recipient and not memo.is_read:
-        memo.is_read = True
-        memo.save(update_fields=['is_read'])
+    if is_recipient:
+        updated = False
+        if not memo.is_read:
+            memo.is_read = True
+            updated = True
+        if not memo.read_at:
+            memo.read_at = timezone.now()
+            updated = True
+        if updated:
+            memo.save(update_fields=['is_read', 'read_at'])
 
     minute_form = MessageMinuteForm()
-    if request.method == 'POST' and request.POST.get('action') == 'add_minute':
-        if not getattr(request.user, 'account_approved', False) and not request.user.is_superuser:
-            messages.warning(request, 'Unverified accounts cannot add official minutes.')
-        else:
-            minute_form = MessageMinuteForm(request.POST)
-            if minute_form.is_valid():
-                minute = minute_form.save(commit=False)
-                minute.message = memo
-                minute.officer = request.user
-                minute.save()
-                messages.success(request, 'Official minute recorded successfully.')
-                return redirect('message_detail', pk=pk)
+    ack_form = MessageAcknowledgementForm()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_minute':
+            if not getattr(request.user, 'account_approved', False) and not request.user.is_superuser:
+                messages.warning(request, 'Unverified accounts cannot add official minutes.')
+            else:
+                minute_form = MessageMinuteForm(request.POST)
+                if minute_form.is_valid():
+                    minute = minute_form.save(commit=False)
+                    minute.message = memo
+                    minute.officer = request.user
+                    minute.save()
+                    messages.success(request, 'Official minute recorded successfully.')
+                    return redirect('message_detail', pk=pk)
+        elif action == 'acknowledge':
+            if not is_recipient:
+                messages.error(request, 'Only the addressed officer can formally acknowledge receipt.')
+            elif memo.status != 'approved':
+                messages.warning(request, 'Only delivered memorandums can be acknowledged.')
+            elif hasattr(memo, 'acknowledgement'):
+                messages.info(request, 'This memorandum has already been officially acknowledged.')
+            else:
+                ack_form = MessageAcknowledgementForm(request.POST)
+                if ack_form.is_valid():
+                    ack = ack_form.save(commit=False)
+                    ack.message = memo
+                    ack.acknowledged_by = request.user
+                    ack.save()
+                    messages.success(request, f'Receipt of memorandum {memo.ref_number} successfully acknowledged.')
+                    return redirect('message_detail', pk=pk)
 
     minutes = memo.minutes.select_related('officer', 'officer__department').all()
+    acknowledgement = getattr(memo, 'acknowledgement', None)
+    parent_memo = memo.parent
+    replies = memo.replies.select_related('sender', 'recipient', 'sender__department').order_by('timestamp')
 
     sender_dept_id = getattr(memo.sender, 'department_id', None)
     recipient_dept_id = getattr(memo.recipient, 'department_id', None)
@@ -192,6 +249,10 @@ def message_detail_view(request, pk):
         'message': memo,
         'minutes': minutes,
         'minute_form': minute_form,
+        'ack_form': ack_form,
+        'acknowledgement': acknowledgement,
+        'parent_memo': parent_memo,
+        'replies': replies,
         'is_recipient': is_recipient,
         'is_cross_department': is_cross_department,
     })
@@ -207,7 +268,11 @@ def toggle_message_read_view(request, pk):
     memo = get_object_or_404(Message, pk=pk)
     if request.user == memo.recipient:
         memo.is_read = not memo.is_read
-        memo.save(update_fields=['is_read'])
+        if memo.is_read and not memo.read_at:
+            memo.read_at = timezone.now()
+        elif not memo.is_read:
+            memo.read_at = None
+        memo.save(update_fields=['is_read', 'read_at'])
         state = 'read' if memo.is_read else 'unread'
         messages.success(request, f'Message marked as {state}.')
     return redirect('message_detail', pk=pk)

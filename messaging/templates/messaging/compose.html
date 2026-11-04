@@ -38,8 +38,26 @@
 
             <!-- Compose Card -->
             <div class="cws-card p-4 p-md-5">
+                {% if parent_memo %}
+                    <div class="alert alert-info rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-reply-fill fs-4 text-primary"></i>
+                            <div>
+                                <strong class="text-dark d-block">Replying to Official Memorandum:</strong>
+                                <span class="text-muted small"><strong>{{ parent_memo.ref_number }}</strong> &bull; {{ parent_memo.subject }} (From: {{ parent_memo.sender.get_full_name }})</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'message_detail' parent_memo.id %}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> View Original
+                        </a>
+                    </div>
+                {% endif %}
+
                 <form method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
+                    {% if parent_memo %}
+                        <input type="hidden" name="parent" value="{{ parent_memo.id }}">
+                    {% endif %}
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-7">

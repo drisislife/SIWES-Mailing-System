@@ -41,8 +41,19 @@ class Message(models.Model):
     edited_by_hod = models.BooleanField(default=False)
     original_body = models.TextField(blank=True, default='')
 
+    # Reply threading
+    parent = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='replies',
+        help_text="Parent memorandum in reply chain"
+    )
+
     # Timestamps & Tracking
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when recipient first opened the memo")
     timestamp = models.DateTimeField(auto_now_add=True)  # views order by -timestamp
 
     def save(self, *args, **kwargs):
@@ -71,6 +82,20 @@ class MessageMinute(models.Model):
 
     def __str__(self):
         return f"Minute by {self.officer} on {self.message.ref_number}"
+
+
+class MessageAcknowledgement(models.Model):
+    """Formal sign-off and receipt acknowledgement for official council memos."""
+    message = models.OneToOneField(Message, on_delete=models.CASCADE, related_name='acknowledgement')
+    acknowledged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='acknowledgements')
+    acknowledged_at = models.DateTimeField(auto_now_add=True)
+    note = models.CharField(max_length=255, blank=True, default='', help_text="Optional brief acknowledgement note")
+
+    class Meta:
+        ordering = ['-acknowledged_at']
+
+    def __str__(self):
+        return f"Acknowledged by {self.acknowledged_by} on {self.message.ref_number} at {self.acknowledged_at}"
 
 
 class CouncilCircular(models.Model):

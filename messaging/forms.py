@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Message, MessageMinute, CouncilCircular
+from .models import Message, MessageMinute, CouncilCircular, MessageAcknowledgement
 
 User = get_user_model()
 
@@ -41,6 +41,19 @@ class MessageMinuteForm(forms.ModelForm):
                 'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'Enter your official minute or directive (e.g. "Approved as recommended", "Referred to Works Dept for inspection")...'
+            })
+        }
+
+
+class MessageAcknowledgementForm(forms.ModelForm):
+    """Form for recipient to acknowledge receipt of an official memorandum."""
+    class Meta:
+        model = MessageAcknowledgement
+        fields = ['note']
+        widgets = {
+            'note': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Optional brief acknowledgement remark (e.g., "Noted, action in progress", "Received and forwarded to desk")...'
             })
         }
 
