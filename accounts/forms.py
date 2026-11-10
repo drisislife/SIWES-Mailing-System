@@ -95,10 +95,51 @@ class UserProfileForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="Assigned Department"
     )
+    duty_status = forms.ChoiceField(
+        choices=CustomUser.DUTY_STATUS_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Duty Availability Status"
+    )
+    duty_note = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': "e.g. Resuming Nov 15th, acting officer: Mr. Balogun"
+        }),
+        label="Duty Status Notation / Acting Officer"
+    )
+    two_factor_enabled = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="Enable Email Two-Factor Authentication (OTP on Login)"
+    )
 
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'position', 'department']
+        fields = ['first_name', 'last_name', 'position', 'department', 'duty_status', 'duty_note', 'two_factor_enabled']
+
+
+class BulkStaffImportForm(forms.Form):
+    """Admin roster import tool (Feature 7)."""
+    csv_file = forms.FileField(
+        label="Select Personnel CSV Roster",
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.csv'}),
+        help_text="Upload a CSV file with columns: first_name, last_name, email, department, position, role"
+    )
+    auto_approve = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="Auto-verify imported accounts immediately"
+    )
+    default_password = forms.CharField(
+        max_length=50,
+        initial="CouncilStaff2026!",
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        label="Default Temporary Password"
+    )
 
 from django.contrib.auth import authenticate
 

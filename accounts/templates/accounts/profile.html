@@ -42,6 +42,7 @@
                                     <i class="bi bi-briefcase me-1"></i> {{ user.position }}
                                 </span>
                             {% endif %}
+                            {{ user.duty_status_badge }}
                         </div>
                     </div>
                 </div>
@@ -104,6 +105,42 @@
                             {% if form.department.errors %}
                                 <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
                             {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.duty_status.id_for_label }}">
+                                Duty / Availability Status
+                            </label>
+                            {{ form.duty_status }}
+                            <div class="form-text small text-muted">Informs colleagues when sending you official memorandums.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.duty_note.id_for_label }}">
+                                Status Notation / Relieving Officer
+                            </label>
+                            {{ form.duty_note }}
+                            <div class="form-text small text-muted">e.g. Resuming Nov 15th, acting officer: Mr. Balogun</div>
+                        </div>
+                    </div>
+
+                    <!-- Security & 2FA Section (Feature 16) -->
+                    <div class="mb-4 p-3 bg-light rounded-4 border">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <i class="bi bi-shield-lock-fill text-emerald me-1"></i> Two-Factor Authentication (2FA)
+                                </h6>
+                                <div class="text-muted small">Require an email One-Time Password (OTP) verification code when logging in.</div>
+                            </div>
+                            <div class="form-check form-switch ps-5">
+                                {{ form.two_factor_enabled }}
+                                <label class="form-check-label fw-bold text-dark" for="{{ form.two_factor_enabled.id_for_label }}">
+                                    Enable 2FA
+                                </label>
+                            </div>
                         </div>
                     </div>
 

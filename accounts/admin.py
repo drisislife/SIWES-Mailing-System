@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser, Department, ProcurementMemo, ProcurementActionLog
+from .models import CustomUser, Department, ProcurementMemo, ProcurementActionLog, AuditLog
 
 
 @admin.register(Department)
@@ -32,4 +32,12 @@ class ProcurementMemoAdmin(admin.ModelAdmin):
 @admin.register(ProcurementActionLog)
 class ProcurementActionLogAdmin(admin.ModelAdmin):
     list_display = ('memo', 'actor', 'actor_department', 'action', 'stage', 'timestamp')
-    list_filter = ('action', 'stage', 'timestamp')
+    list_filter = ('action', 'stage', 'timestamp')
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('action', 'user', 'ip_address', 'created_at')
+    list_filter = ('action', 'created_at')
+    search_fields = ('description', 'user__email', 'ip_address')
+    readonly_fields = ('user', 'action', 'description', 'ip_address', 'created_at')

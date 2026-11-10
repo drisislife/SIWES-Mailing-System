@@ -123,3 +123,59 @@ class HODApprovalTests(TestCase):
         reply = Message.objects.get(subject='Re: Initial Council Proposal')
         self.assertEqual(reply.parent, parent_msg)
         self.assertEqual(parent_msg.replies.first(), reply)
+
+    def test_memo_recall_by_sender(self):
+        msg = Message.objects.create(
+            sender=self.staff_it,
+            recipient=self.staff_hr,
+            subject='Accidental Dispatch',
+            body='Please disregard this memo.',
+            status='approved',
+            is_read=False
+        )
+
+        self.client.login(username="staff_it@org.com", password="password123")
+        response = self.client.post(
+            reverse('memo_recall', kwargs={'pk': msg.id}),
+            {'recall_reason': 'Sent with draft figures by error.'}
+        )
+        self.assertEqual(response.status_code, 302)
+
+        msg.refresh_from_db()
+        self.assertEqual(msg.status, 'recalled')
+        self.assertEqual(msg.recall_reason, 'Sent with draft figures by error.')
+        self.assertIsNotNone(msg.recalled_at)
+
+    def test_memo_pdf_export_accessible(self):
+        msg = Message.objects.create(
+            sender=self.staff_it,
+            recipient=self.staff_hr,
+            subject='Official Printout Test',
+            body='Formatted council memo text.',
+            status='approved'
+        )
+
+        self.client.login(username="staff_it@org.com", password="password123")
+        response = self.client.get(reverse('memo_pdf', kwargs={'pk': msg.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'COUNCIL WORKSPACE SYSTEM')
+        self.assertContains(response, msg.ref_number)
+
+    def test_staff_directory_view(self):
+        self.client.login(username="staff_it@org.com", password="password123")
+        response = self.client.get(reverse('staff_directory'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Council Personnel Directory')
+        self.assertContains(response, 'Jane Smith')
+
+    def test_records_archive_view_restricted(self):
+        # Staff cannot access archive
+        self.client.login(username="staff_it@org.com", password="password123")
+        response = self.client.get(reverse('records_archive'))
+        self.assertEqual(response.status_code, 302)
+
+        # HOD can access archive
+        self.client.login(username="hod_it@org.com", password="password123")
+        response = self.client.get(reverse('records_archive'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Central Records Registry')

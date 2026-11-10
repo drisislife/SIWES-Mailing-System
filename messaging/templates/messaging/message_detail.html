@@ -14,9 +14,18 @@
                 </a>
 
                 <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="{% url 'memo_pdf' message.id %}" target="_blank" class="btn btn-cws-light" title="View &amp; Print Official Government Letterhead PDF">
+                        <i class="bi bi-file-earmark-pdf me-1 text-danger"></i> Letterhead PDF
+                    </a>
                     <button onclick="window.print()" class="btn btn-cws-light" title="Print official memorandum">
-                        <i class="bi bi-printer me-1"></i> Print Memo
+                        <i class="bi bi-printer me-1"></i> Print
                     </button>
+
+                    {% if request.user == message.sender and not message.is_read and message.status == 'approved' or request.user == message.sender and not message.is_read and message.status == 'pending_hod' %}
+                        <a href="{% url 'memo_recall' message.id %}" class="btn btn-outline-warning rounded-pill px-3 py-2 fw-semibold" title="Recall unread memo">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Recall Memo
+                        </a>
+                    {% endif %}
 
                     {% if is_recipient %}
                         <form method="POST" action="{% url 'toggle_message_read' message.id %}" class="d-inline">
@@ -60,6 +69,38 @@
                     <a href="{% url 'message_detail' parent_memo.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                         <i class="bi bi-box-arrow-up-right me-1"></i> View Original Memo
                     </a>
+                </div>
+            {% endif %}
+
+            <!-- Recalled Status Banner (Feature 5) -->
+            {% if message.status == 'recalled' %}
+                <div class="alert alert-danger rounded-4 p-4 mb-4 shadow-sm border border-danger-subtle no-print">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-x-octagon-fill fs-2 text-danger"></i>
+                        <div>
+                            <h5 class="fw-bold text-danger mb-1">Memorandum Officially Recalled &amp; Withdrawn</h5>
+                            <div class="text-dark small">
+                                This correspondence was withdrawn by the originating officer on <strong>{{ message.recalled_at|date:"F d, Y \a\t H:i" }}</strong>.
+                                {% if message.recall_reason %}
+                                    <div class="mt-1"><strong>Reason recorded:</strong> <em>"{{ message.recall_reason }}"</em></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Priority Escalation Banner (Feature 19) -->
+            {% if message.escalated and not message.is_read %}
+                <div class="alert alert-warning rounded-4 p-3 mb-4 shadow-sm border border-warning-subtle d-flex align-items-center justify-content-between flex-wrap gap-2 no-print">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-alarm-fill fs-4 text-danger"></i>
+                        <div>
+                            <strong class="text-dark d-block">Urgency Escalation Alert (Pending Unread Over 24 Hours)</strong>
+                            <span class="text-muted small">This high-priority memorandum was escalated for executive attention because it has remained unopened on the destination desk for more than 24 hours.</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-2">Escalated</span>
                 </div>
             {% endif %}
 

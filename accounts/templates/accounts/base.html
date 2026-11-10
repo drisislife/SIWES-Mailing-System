@@ -655,6 +655,25 @@
                                     {% endif %}
                                 </a>
                             </li>
+                            <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'notice_board' %}active{% endif %}">
+                                <a href="{% url 'notice_board' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-clipboard2-fill"></i>
+                                        <span>Notice Board</span>
+                                    </div>
+                                    {% if sidebar_notices_count > 0 %}
+                                        <span class="badge bg-emerald text-white rounded-pill">{{ sidebar_notices_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'staff_directory' %}active{% endif %}">
+                                <a href="{% url 'staff_directory' %}">
+                                    <div class="sidebar-nav-left">
+                                        <i class="bi bi-people-fill"></i>
+                                        <span>Staff Directory</span>
+                                    </div>
+                                </a>
+                            </li>
                             <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
                                 <a href="{% url 'profile' %}">
                                     <div class="sidebar-nav-left">
@@ -684,6 +703,22 @@
                                         {% endif %}
                                     </a>
                                 </li>
+                                <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'records_archive' %}active{% endif %}">
+                                    <a href="{% url 'records_archive' %}">
+                                        <div class="sidebar-nav-left">
+                                            <i class="bi bi-archive-fill"></i>
+                                            <span>Records Registry</span>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'analytics_dashboard' %}active{% endif %}">
+                                    <a href="{% url 'analytics_dashboard' %}">
+                                        <div class="sidebar-nav-left">
+                                            <i class="bi bi-graph-up"></i>
+                                            <span>Analytics &amp; Metrics</span>
+                                        </div>
+                                    </a>
+                                </li>
                                 {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
                                     <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
                                         <a href="{% url 'user_management' %}">
@@ -698,6 +733,22 @@
                                             <div class="sidebar-nav-left">
                                                 <i class="bi bi-people-fill"></i>
                                                 <span>Manage Roles</span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'bulk_staff_import' %}active{% endif %}">
+                                        <a href="{% url 'bulk_staff_import' %}">
+                                            <div class="sidebar-nav-left">
+                                                <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                                                <span>Bulk Staff Import</span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-nav-item {% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}">
+                                        <a href="{% url 'audit_log' %}">
+                                            <div class="sidebar-nav-left">
+                                                <i class="bi bi-shield-check"></i>
+                                                <span>Audit Trail</span>
                                             </div>
                                         </a>
                                     </li>
@@ -769,8 +820,49 @@
                         </div>
                     </div>
 
-                    <!-- Right: Profile Pill + Logout -->
-                    <div class="d-flex align-items-center gap-2">
+                    <!-- Right: Notifications + Profile Pill + Logout -->
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- In-App Notification Bell (Feature 10) -->
+                        <div class="dropdown">
+                            <button class="btn btn-light rounded-circle p-2 position-relative border" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                                <i class="bi bi-bell-fill fs-5 text-dark"></i>
+                                {% if unread_notifications_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                                        {{ unread_notifications_count }}
+                                    </span>
+                                {% endif %}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 p-2 border-0 mt-2" style="width: 320px; max-height: 420px; overflow-y: auto;">
+                                <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                    <strong class="text-dark small">Notifications</strong>
+                                    {% if unread_notifications_count > 0 %}
+                                        <form method="POST" action="{% url 'mark_all_notifications_read' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-link btn-sm p-0 text-emerald text-decoration-none fs-8 fw-semibold">Mark all read</button>
+                                        </form>
+                                    {% endif %}
+                                </li>
+                                {% if latest_notifications %}
+                                    {% for notif in latest_notifications %}
+                                        <li>
+                                            <a class="dropdown-item rounded-3 p-2 small d-flex align-items-start gap-2 {% if not notif.is_read %}bg-light fw-bold{% endif %}" href="{% url 'mark_notification_read' notif.id %}">
+                                                <i class="bi bi-dot fs-3 text-emerald lh-1"></i>
+                                                <div style="min-width: 0;">
+                                                    <div class="text-dark text-truncate">{{ notif.verb }}</div>
+                                                    <div class="text-muted fs-8 fw-normal">{{ notif.created_at|date:"M d, H:i" }}</div>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="px-3 py-4 text-center text-muted small">No notifications yet</li>
+                                {% endif %}
+                                <li class="border-top pt-2 mt-1 text-center">
+                                    <a href="{% url 'notifications_list' %}" class="text-emerald text-decoration-none small fw-bold">View all notifications &rarr;</a>
+                                </li>
+                            </ul>
+                        </div>
+
                         <a href="{% url 'profile' %}" class="topbar-user-pill text-decoration-none" title="View / Edit Profile">
                             <div class="topbar-user-avatar">
                                 {% if request.user.first_name %}
@@ -867,6 +959,88 @@
                 backdrop.classList.toggle('show');
             }
         }
+    </script>
+
+    <!-- Inactivity Session Timeout Warning Modal (Feature 15) -->
+    <div class="modal fade" id="idleTimeoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="cws-card p-4 border-0 shadow-lg text-center w-100">
+                <div class="sidebar-brand-icon mx-auto mb-3 bg-warning text-dark" style="width: 56px; height: 56px; font-size: 1.6rem;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">Session Inactivity Alert</h4>
+                <p class="text-muted small mb-3">
+                    For council security compliance, your session will automatically terminate in <span id="idleCountdown" class="fw-bold text-danger">120</span> seconds due to inactivity.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-cws-emerald px-4" onclick="resetIdleTimer()">
+                        <i class="bi bi-arrow-repeat me-1"></i> Stay Logged In
+                    </button>
+                    <a href="{% url 'logout' %}" class="btn btn-cws-light px-3">Logout Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Feature 15: 30-Minute Inactivity Auto-Logout with 2-Minute Warning
+        (function() {
+            let warningTimeout, logoutTimeout, countdownInterval;
+            const WARNING_TIME = 28 * 60 * 1000; // 28 minutes
+            const LOGOUT_TIME = 30 * 60 * 1000;  // 30 minutes
+            let countdown = 120;
+
+            function startTimer() {
+                clearTimeout(warningTimeout);
+                clearTimeout(logoutTimeout);
+                clearInterval(countdownInterval);
+
+                warningTimeout = setTimeout(showWarning, WARNING_TIME);
+                logoutTimeout = setTimeout(forceLogout, LOGOUT_TIME);
+            }
+
+            function showWarning() {
+                const modalEl = document.getElementById('idleTimeoutModal');
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                    countdown = 120;
+                    countdownInterval = setInterval(function() {
+                        countdown--;
+                        const counterEl = document.getElementById('idleCountdown');
+                        if (counterEl) counterEl.textContent = countdown;
+                        if (countdown <= 0) {
+                            clearInterval(countdownInterval);
+                            forceLogout();
+                        }
+                    }, 1000);
+                }
+            }
+
+            function forceLogout() {
+                window.location.href = "{% url 'logout' %}";
+            }
+
+            window.resetIdleTimer = function() {
+                const modalEl = document.getElementById('idleTimeoutModal');
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+                startTimer();
+            };
+
+            ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(evt) {
+                document.addEventListener(evt, function() {
+                    const modalEl = document.getElementById('idleTimeoutModal');
+                    if (!modalEl || !modalEl.classList.contains('show')) {
+                        startTimer();
+                    }
+                }, { passive: true });
+            });
+
+            startTimer();
+        })();
     </script>
 </body>
 </html>

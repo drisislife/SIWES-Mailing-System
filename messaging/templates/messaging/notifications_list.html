@@ -1,0 +1,66 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Notifications Center - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Top Action Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">Notifications Center</h2>
+                    <div class="text-muted small">Real-time alerts on inbound correspondence, approvals, sign-offs, and circulars</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <form method="POST" action="{% url 'mark_all_notifications_read' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-cws-light">
+                            <i class="bi bi-check2-all me-1"></i> Mark All as Read
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notifications List Card -->
+            <div class="cws-card p-4">
+                {% if notifications %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for n in notifications %}
+                            <a href="{% url 'mark_notification_read' n.id %}" class="inspo-pill-item {% if not n.is_read %}border-primary bg-white shadow-sm{% endif %}">
+                                <div class="inspo-pill-left" style="min-width: 0;">
+                                    <div class="inspo-pill-eye {% if not n.is_read %}bg-primary text-white{% else %}bg-secondary bg-opacity-10 text-secondary{% endif %}">
+                                        <i class="bi {% if not n.is_read %}bi-bell-fill{% else %}bi-bell{% endif %}"></i>
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div class="fw-bold text-dark mb-1">{{ n.verb }}</div>
+                                        <div class="text-muted small">
+                                            {% if n.actor %}
+                                                Triggered by <strong>{{ n.actor.get_full_name }}</strong> &bull;
+                                            {% endif %}
+                                            <span class="font-monospace fs-8">{{ n.created_at|date:"M d, Y \a\t H:i" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if not n.is_read %}
+                                        <span class="badge bg-primary rounded-pill px-2 py-1 fs-8">New</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-bell-slash fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                        <h5 class="fw-bold text-dark">No notifications yet</h5>
+                        <p class="mb-0 text-muted small">When you receive a memo, approval, or sign-off, alerts will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

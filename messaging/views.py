@@ -1,11 +1,21 @@
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
-from .models import Message, MessageMinute, CouncilCircular, MessageAcknowledgement
-from .forms import MessageForm, MessageMinuteForm, CouncilCircularForm, MessageAcknowledgementForm
+from django.http import JsonResponse, HttpResponse
+from .models import (
+    Message, MessageMinute, CouncilCircular, MessageAcknowledgement,
+    MemoTemplate, Notification, NoticeBoardItem
+)
+from .forms import (
+    MessageForm, MessageMinuteForm, CouncilCircularForm,
+    MessageAcknowledgementForm, NoticeBoardForm, MemoRecallForm
+)
+from accounts.audit import log_audit
+from .notifications import send_notification
 
 User = get_user_model()
 
@@ -136,6 +146,26 @@ def compose_view(request):
                 messages.info(request, 'Cross-department memo forwarded to your Head of Department (HOD) for review & endorsement.')
 
             memo.save()
+
+            log_audit(request, 'MEMO_SENT', f"Dispatched memo {memo.ref_number} to {memo.recipient.email} [{memo.status}]")
+
+            if memo.status == 'approved':
+                send_notification(
+                    recipient=memo.recipient,
+                    verb=f"New memorandum received: {memo.subject}",
+                    target_url=f"/messaging/{memo.id}/",
+                    actor=request.user
+                )
+            elif memo.status == 'pending_hod' and sender_dept:
+                hod_user = User.objects.filter(department=sender_dept, role='HOD', account_approved=True).first()
+                if hod_user:
+                    send_notification(
+                        recipient=hod_user,
+                        verb=f"Cross-department memo awaiting your review: {memo.subject}",
+                        target_url="/messaging/hod/approvals/",
+                        actor=request.user
+                    )
+
             return redirect('sent_messages')
     else:
         initial = {}
@@ -165,11 +195,22 @@ def compose_view(request):
         elif priority:
             initial['priority'] = priority
 
+        template_id = request.GET.get('template')
+        if template_id:
+            tmpl = MemoTemplate.objects.filter(pk=template_id).first()
+            if tmpl:
+                initial['subject'] = tmpl.default_subject
+                initial['body'] = tmpl.default_body
+                initial['priority'] = tmpl.default_priority
+
         form = MessageForm(initial=initial)
+
+    templates = MemoTemplate.objects.all().order_by('category', 'title')
 
     return render(request, 'messaging/compose.html', {
         'form': form,
         'parent_memo': parent_memo,
+        'templates': templates,
     })
 
 
@@ -189,6 +230,13 @@ def message_detail_view(request, pk):
         messages.error(request, 'You do not have permission to view this memo.')
         return redirect('inbox')
 
+    # Priority Escalation (Feature 19)
+    if memo.priority in ('URGENT', 'CONFIDENTIAL') and not memo.is_read:
+        if (timezone.now() - memo.timestamp).total_seconds() > 86400 and not memo.escalated:
+            memo.escalated = True
+            memo.escalated_at = timezone.now()
+            memo.save(update_fields=['escalated', 'escalated_at'])
+
     is_recipient = (request.user == memo.recipient)
     if is_recipient:
         updated = False
@@ -198,6 +246,7 @@ def message_detail_view(request, pk):
         if not memo.read_at:
             memo.read_at = timezone.now()
             updated = True
+            log_audit(request, 'MEMO_READ', f"Memo {memo.ref_number} opened by {request.user.email}")
         if updated:
             memo.save(update_fields=['is_read', 'read_at'])
 
@@ -232,6 +281,13 @@ def message_detail_view(request, pk):
                     ack.message = memo
                     ack.acknowledged_by = request.user
                     ack.save()
+                    log_audit(request, 'MEMO_ACKNOWLEDGED', f"Memo {memo.ref_number} receipt signed off by {request.user.email}")
+                    send_notification(
+                        recipient=memo.sender,
+                        verb=f"Receipt of memo {memo.ref_number} was officially signed off by {request.user.get_full_name()}.",
+                        target_url=f"/messaging/{memo.id}/",
+                        actor=request.user
+                    )
                     messages.success(request, f'Receipt of memorandum {memo.ref_number} successfully acknowledged.')
                     return redirect('message_detail', pk=pk)
 
@@ -427,3 +483,223 @@ def create_circular_view(request):
         form = CouncilCircularForm()
 
     return render(request, 'messaging/circular_create.html', {'form': form})
+
+
+# ---------------------------------------------------------------------------
+# Memo Recall / Withdraw (Feature 5)
+# ---------------------------------------------------------------------------
+
+@login_required
+def memo_recall_view(request, pk):
+    """Allow originating officer to recall/withdraw an unread memo."""
+    memo = get_object_or_404(Message, pk=pk)
+
+    if request.user != memo.sender and not request.user.is_superuser:
+        messages.error(request, 'Permission Denied: Only the originating officer can recall this memorandum.')
+        return redirect('message_detail', pk=pk)
+
+    if memo.is_read:
+        messages.warning(request, 'Action Prohibited: This memorandum has already been opened by the recipient and cannot be recalled.')
+        return redirect('message_detail', pk=pk)
+
+    if memo.status == 'recalled':
+        messages.info(request, 'This memorandum has already been recalled.')
+        return redirect('message_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = MemoRecallForm(request.POST)
+        if form.is_valid():
+            reason = form.cleaned_data['recall_reason']
+            memo.status = 'recalled'
+            memo.recalled_at = timezone.now()
+            memo.recall_reason = reason
+            memo.save(update_fields=['status', 'recalled_at', 'recall_reason'])
+
+            log_audit(request, 'MEMO_RECALLED', f"Recalled memo {memo.ref_number}. Reason: {reason}")
+            send_notification(
+                recipient=memo.recipient,
+                verb=f"Memorandum {memo.ref_number} was withdrawn/recalled by sender ({request.user.get_full_name()}).",
+                target_url=f"/messaging/{memo.id}/",
+                actor=request.user
+            )
+            messages.success(request, f'Memorandum {memo.ref_number} has been officially withdrawn and recalled.')
+            return redirect('sent_messages')
+    else:
+        form = MemoRecallForm()
+
+    return render(request, 'messaging/memo_recall.html', {
+        'memo': memo,
+        'form': form,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Official Memo PDF / Printable Letterhead (Feature 12)
+# ---------------------------------------------------------------------------
+
+@login_required
+def memo_pdf_view(request, pk):
+    """High-fidelity official council memorandum letterhead ready for print / PDF archiving."""
+    memo = get_object_or_404(Message.objects.select_related(
+        'sender', 'recipient', 'sender__department', 'recipient__department', 'acknowledgement'
+    ), pk=pk)
+
+    # Permission check: sender, recipient, admin, or hod
+    if request.user not in (memo.sender, memo.recipient) and not request.user.is_superuser and not _is_hod(request.user):
+        messages.error(request, 'Permission Denied: You do not have authorization to export this official document.')
+        return redirect('inbox')
+
+    minutes = memo.minutes.select_related('officer', 'officer__department').all()
+    acknowledgement = getattr(memo, 'acknowledgement', None)
+
+    return render(request, 'messaging/memo_pdf.html', {
+        'memo': memo,
+        'minutes': minutes,
+        'acknowledgement': acknowledgement,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Central Records Registry & Archive (Feature 11)
+# ---------------------------------------------------------------------------
+
+@login_required
+def records_archive_view(request):
+    """Central searchable registry of all council memos for leadership, registry & HODs."""
+    if not (request.user.is_superuser or request.user.role in ('ADMIN', 'HOD')):
+        messages.error(request, 'Access Denied: The central records registry is restricted to Council Administrators and Department Heads.')
+        return redirect('inbox')
+
+    memos_qs = Message.objects.filter(status='approved').select_related(
+        'sender', 'recipient', 'sender__department', 'recipient__department', 'acknowledgement'
+    ).order_by('-timestamp')
+
+    q = request.GET.get('q', '').strip()
+    dept_id = request.GET.get('dept', '').strip()
+    priority = request.GET.get('priority', '').strip()
+    date_from = request.GET.get('from', '').strip()
+    date_to = request.GET.get('to', '').strip()
+
+    if q:
+        memos_qs = memos_qs.filter(
+            Q(ref_number__icontains=q) |
+            Q(subject__icontains=q) |
+            Q(body__icontains=q) |
+            Q(sender__first_name__icontains=q) |
+            Q(sender__last_name__icontains=q) |
+            Q(recipient__first_name__icontains=q) |
+            Q(recipient__last_name__icontains=q)
+        )
+    if dept_id:
+        memos_qs = memos_qs.filter(
+            Q(sender__department_id=dept_id) | Q(recipient__department_id=dept_id)
+        )
+    if priority:
+        memos_qs = memos_qs.filter(priority=priority)
+    if date_from:
+        memos_qs = memos_qs.filter(timestamp__date__gte=date_from)
+    if date_to:
+        memos_qs = memos_qs.filter(timestamp__date__lte=date_to)
+
+    # Optional CSV Export of Registry Search Results
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="CWS_Registry_Archive_{timezone.now():%Y%m%d}.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Reference Number', 'Priority', 'Subject', 'Sender', 'Sender Dept', 'Recipient', 'Recipient Dept', 'Dispatched At', 'Is Read', 'Read At', 'Acknowledged'])
+        for m in memos_qs[:500]:
+            ack_text = f"Yes ({m.acknowledgement.acknowledged_at:%Y-%m-%d %H:%M})" if hasattr(m, 'acknowledgement') else "No"
+            writer.writerow([
+                m.ref_number, m.priority, m.subject,
+                m.sender.get_full_name(), getattr(m.sender.department, 'name', 'General Line'),
+                m.recipient.get_full_name(), getattr(m.recipient.department, 'name', 'General Line'),
+                m.timestamp.strftime('%Y-%m-%d %H:%M'),
+                'Yes' if m.is_read else 'No',
+                m.read_at.strftime('%Y-%m-%d %H:%M') if m.read_at else 'N/A',
+                ack_text
+            ])
+        return response
+
+    departments = User.objects.none()  # placeholder
+    from accounts.models import Department
+    departments = Department.objects.all().order_by('name')
+
+    total_records = memos_qs.count()
+    memos_page = memos_qs[:100]
+
+    return render(request, 'messaging/archive.html', {
+        'memos': memos_page,
+        'total_records': total_records,
+        'departments': departments,
+        'search_query': q,
+        'selected_dept': dept_id,
+        'selected_priority': priority,
+        'date_from': date_from,
+        'date_to': date_to,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Internal Notice Board (Feature 17)
+# ---------------------------------------------------------------------------
+
+@login_required
+def notice_board_view(request):
+    """Council Notice Board for meetings, welfare advisories, and internal announcements."""
+    notices = NoticeBoardItem.objects.select_related('author', 'author__department').all()
+
+    category_filter = request.GET.get('category', '').strip()
+    if category_filter:
+        notices = notices.filter(category=category_filter)
+
+    can_post = request.user.is_superuser or getattr(request.user, 'role', '') in ('ADMIN', 'HOD')
+
+    form = None
+    if can_post:
+        if request.method == 'POST' and request.POST.get('action') == 'post_notice':
+            form = NoticeBoardForm(request.POST, request.FILES)
+            if form.is_valid():
+                notice = form.save(commit=False)
+                notice.author = request.user
+                notice.save()
+                messages.success(request, f'Notice "{notice.title}" posted to the bulletin board.')
+                return redirect('notice_board')
+        else:
+            form = NoticeBoardForm()
+
+    return render(request, 'messaging/notice_board.html', {
+        'notices': notices,
+        'form': form,
+        'can_post': can_post,
+        'selected_category': category_filter,
+    })
+
+
+# ---------------------------------------------------------------------------
+# In-App Notifications API & Handlers (Feature 10)
+# ---------------------------------------------------------------------------
+
+@login_required
+def notifications_list_view(request):
+    """Full notifications inbox for the current officer."""
+    notifs = request.user.notifications.select_related('actor').all()[:50]
+    return render(request, 'messaging/notifications_list.html', {'notifications': notifs})
+
+
+@login_required
+def mark_notification_read_view(request, pk):
+    """Mark a notification as read and redirect to target URL."""
+    notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
+    notif.is_read = True
+    notif.save(update_fields=['is_read'])
+    if notif.target_url:
+        return redirect(notif.target_url)
+    return redirect('notifications_list')
+
+
+@login_required
+def mark_all_notifications_read_view(request):
+    """Mark all notifications as read for current user."""
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    messages.success(request, 'All notifications marked as read.')
+    return redirect('notifications_list')

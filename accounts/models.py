@@ -25,10 +25,34 @@ class CustomUser(AbstractUser):
         ('HOD', 'Head of Department'),
         ('ADMIN', 'Admin/Council Manager'),
     )
+    DUTY_STATUS_CHOICES = (
+        ('ACTIVE', 'On Active Duty'),
+        ('ON_LEAVE', 'On Approved Leave'),
+        ('OFFICIAL_ASSIGNMENT', 'On Official Assignment / Field'),
+    )
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STAFF')
     position = models.CharField(max_length=150, blank=True, default='', help_text="Official designation or job title")
     account_approved = models.BooleanField(default=False)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
+
+    # Duty & Leave tracking (Feature 18)
+    duty_status = models.CharField(max_length=30, choices=DUTY_STATUS_CHOICES, default='ACTIVE')
+    duty_note = models.CharField(max_length=255, blank=True, default='', help_text="Optional note (e.g., 'Resumes Nov 15th, acting officer: Mr. Balogun')")
+
+    # Two-Factor Authentication (Feature 16)
+    two_factor_enabled = models.BooleanField(default=False, help_text="Require email OTP verification on login")
+    two_factor_otp = models.CharField(max_length=6, blank=True, default='')
+    two_factor_otp_expiry = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def duty_status_badge(self):
+        """Visual status pill for staff duty availability."""
+        if self.duty_status == 'ON_LEAVE':
+            return mark_safe('<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1"><i class="bi bi-airplane-engines me-1"></i>On Leave</span>')
+        if self.duty_status == 'OFFICIAL_ASSIGNMENT':
+            return mark_safe('<span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill px-2 py-1"><i class="bi bi-briefcase me-1"></i>Official Duty</span>')
+        return mark_safe('<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1"><i class="bi bi-dot"></i>Active</span>')
 
     @property
     def is_verified(self):
@@ -116,3 +140,35 @@ class ProcurementActionLog(models.Model):
 
     def __str__(self):
         return f"{self.memo.title} - {self.action} by {self.actor} at {self.timestamp}"
+
+
+class AuditLog(models.Model):
+    """Immutable audit trail for council security and administrative compliance (Feature 14)."""
+    ACTION_CHOICES = (
+        ('LOGIN', 'User Logged In'),
+        ('LOGOUT', 'User Logged Out'),
+        ('FAILED_LOGIN', 'Failed Login Attempt'),
+        ('MEMO_SENT', 'Memorandum Dispatched'),
+        ('MEMO_READ', 'Memorandum Opened / Read'),
+        ('MEMO_ACKNOWLEDGED', 'Receipt Formally Acknowledged'),
+        ('MEMO_RECALLED', 'Memorandum Recalled / Withdrawn'),
+        ('HOD_APPROVED', 'HOD Approved Memorandum'),
+        ('HOD_REJECTED', 'HOD Rejected Memorandum'),
+        ('CIRCULAR_PUBLISHED', 'Council Circular Published'),
+        ('STAFF_APPROVED', 'Staff Account Verified / Approved'),
+        ('ROLE_CHANGED', 'Staff Role / Designation Updated'),
+        ('BULK_IMPORT', 'Bulk Staff Accounts Imported'),
+    )
+
+    user = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_entries')
+    action = models.CharField(max_length=40, choices=ACTION_CHOICES)
+    description = models.TextField(help_text="Detailed audit event record")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.get_action_display()} by {self.user or 'System'}"
+

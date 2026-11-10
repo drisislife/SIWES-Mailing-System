@@ -53,6 +53,27 @@
                     </div>
                 {% endif %}
 
+                <!-- Standard Council Memo Templates (Feature 9) -->
+                {% if templates %}
+                    <div class="p-3 mb-4 rounded-4 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-richtext-fill fs-5 text-emerald"></i>
+                            <div>
+                                <strong class="text-dark d-block small">Standard Council Templates</strong>
+                                <span class="text-muted fs-8">Load a pre-formatted structure for leave, queries, reports, or requisitions</span>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="templateSelector" class="form-select form-select-sm rounded-pill" style="min-width: 250px;" onchange="loadTemplate(this.value)">
+                                <option value="">-- Choose a Council Template --</option>
+                                {% for tmpl in templates %}
+                                    <option value="{{ tmpl.id }}" data-subject="{{ tmpl.default_subject }}" data-priority="{{ tmpl.default_priority }}" data-body="{{ tmpl.default_body|escapejs }}">{{ tmpl.title }} ({{ tmpl.category }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                {% endif %}
+
                 <form method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% if parent_memo %}
@@ -129,4 +150,27 @@
         </div>
     </div>
 </div>
+
+<script>
+function loadTemplate(templateId) {
+    if (!templateId) return;
+    const select = document.getElementById('templateSelector');
+    const option = select.options[select.selectedIndex];
+    if (!option) return;
+
+    const subjectInput = document.getElementById('{{ form.subject.id_for_label }}');
+    const bodyInput = document.getElementById('{{ form.body.id_for_label }}');
+    const priorityInput = document.getElementById('{{ form.priority.id_for_label }}');
+
+    if (subjectInput && option.dataset.subject) {
+        subjectInput.value = option.dataset.subject;
+    }
+    if (priorityInput && option.dataset.priority) {
+        priorityInput.value = option.dataset.priority;
+    }
+    if (bodyInput && option.dataset.body) {
+        bodyInput.value = option.dataset.body;
+    }
+}
+</script>
 {% endblock %}

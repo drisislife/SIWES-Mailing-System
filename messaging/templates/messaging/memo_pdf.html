@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OFFICIAL MEMORANDUM - {{ memo.ref_number }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 20mm 20mm 20mm;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+            color: #0f172a;
+            background: #f8fafc;
+            padding: 30px 15px;
+            margin: 0;
+        }
+        .memo-sheet {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 50px 60px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            border-radius: 8px;
+            position: relative;
+        }
+        .memo-coat-arms {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 12px;
+            background: #0f172a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 2rem;
+        }
+        .memo-header-title {
+            letter-spacing: 2px;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+        .memo-subhead {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #475569;
+            font-weight: 700;
+        }
+        .memo-ref-box {
+            font-family: 'Courier Prime', monospace;
+            background: #f1f5f9;
+            border: 1.5px dashed #94a3b8;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .meta-table th {
+            width: 25%;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            color: #64748b;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .meta-table td {
+            font-size: 0.95rem;
+            color: #0f172a;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .memo-body {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: #1e293b;
+            min-height: 220px;
+        }
+        .watermark {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 5rem;
+            font-weight: 900;
+            color: rgba(16, 185, 129, 0.04);
+            text-transform: uppercase;
+            pointer-events: none;
+            letter-spacing: 8px;
+            white-space: nowrap;
+        }
+        .signature-line {
+            width: 220px;
+            border-top: 1.5px solid #0f172a;
+            margin-top: 50px;
+            padding-top: 6px;
+        }
+        @media print {
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+            }
+            .memo-sheet {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Print / Export Bar -->
+    <div class="text-center mb-4 no-print">
+        <div class="d-inline-flex gap-2 p-2 bg-white rounded-pill shadow-sm border">
+            <button onclick="window.print()" class="btn btn-dark rounded-pill px-4">
+                <i class="bi bi-printer-fill me-1"></i> Print / Save as Official PDF
+            </button>
+            <a href="{% url 'message_detail' memo.id %}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-1"></i> Back to Portal
+            </a>
+        </div>
+    </div>
+
+    <div class="memo-sheet">
+        <div class="watermark">COUNCIL OFFICIAL</div>
+
+        <!-- Official Letterhead Header -->
+        <div class="text-center pb-3 mb-4 border-bottom border-2 border-dark">
+            <div class="memo-coat-arms">
+                <i class="bi bi-intersect"></i>
+            </div>
+            <div class="memo-header-title">COUNCIL WORKSPACE SYSTEM</div>
+            <div class="memo-subhead">Office of Internal Communications &amp; Administrative Records</div>
+            <div class="small text-muted">Federal Republic of Nigeria &bull; Local Government Council Secretariat</div>
+        </div>
+
+        <!-- Ref Number & Date Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <span class="small text-muted d-block text-uppercase fw-bold">Official Reference:</span>
+                <span class="memo-ref-box">{{ memo.ref_number }}</span>
+            </div>
+            <div class="text-end">
+                <span class="small text-muted d-block text-uppercase fw-bold">Date of Dispatch:</span>
+                <strong class="text-dark">{{ memo.timestamp|date:"F d, Y" }}</strong>
+            </div>
+        </div>
+
+        <!-- Meta Table (To, From, Priority, Subject) -->
+        <table class="table meta-table mb-4">
+            <tbody>
+                <tr>
+                    <th>TO (Addressed Desk):</th>
+                    <td>
+                        <strong>{{ memo.recipient.get_full_name }}</strong> 
+                        ({{ memo.recipient.position|default:memo.recipient.get_role_display }})
+                        <div class="small text-muted">{{ memo.recipient.department.name|default:"General Line" }} &bull; {{ memo.recipient.email }}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>FROM (Originating Officer):</th>
+                    <td>
+                        <strong>{{ memo.sender.get_full_name }}</strong> 
+                        ({{ memo.sender.position|default:memo.sender.get_role_display }})
+                        <div class="small text-muted">{{ memo.sender.department.name|default:"General Line" }} &bull; {{ memo.sender.email }}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>CLASSIFICATION:</th>
+                    <td>
+                        <strong class="{% if memo.priority == 'URGENT' %}text-danger{% elif memo.priority == 'CONFIDENTIAL' %}text-dark{% else %}text-secondary{% endif %}">
+                            {{ memo.get_priority_display|upper }}
+                        </strong>
+                        {% if memo.edited_by_hod %}
+                            &bull; <span class="badge bg-light text-dark border">Vetted &amp; Endorsed by HOD</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>SUBJECT:</th>
+                    <td><strong class="text-dark fs-6">{{ memo.subject }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Memorandum Content Body -->
+        <div class="mb-5">
+            <div class="small text-muted fw-bold text-uppercase mb-2">Communication Text:</div>
+            <div class="memo-body p-3 rounded bg-light border">
+{{ memo.body }}
+            </div>
+        </div>
+
+        <!-- Attached Document Notation -->
+        {% if memo.attachment %}
+            <div class="p-3 bg-light rounded border mb-4 small text-dark d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-paperclip me-1 text-primary"></i>
+                    <strong>Attached Supporting Record:</strong> {{ memo.attachment.name }}
+                </div>
+                <span class="text-muted font-monospace">[Attachment Verified on File]</span>
+            </div>
+        {% endif %}
+
+        <!-- Signatures & Execution Section -->
+        <div class="row pt-4 mb-4">
+            <div class="col-6">
+                <div class="signature-line">
+                    <strong class="d-block text-dark">{{ memo.sender.get_full_name }}</strong>
+                    <span class="small text-muted">{{ memo.sender.position|default:memo.sender.get_role_display }}</span>
+                    <div class="small text-muted">{{ memo.sender.department.name|default:"Originating Desk" }}</div>
+                </div>
+            </div>
+            <div class="col-6 text-end">
+                <div class="signature-line ms-auto">
+                    {% if acknowledgement %}
+                        <strong class="d-block text-success"><i class="bi bi-patch-check-fill me-1"></i> Formally Signed Off</strong>
+                        <span class="small text-dark">{{ acknowledgement.acknowledged_by.get_full_name }}</span>
+                        <div class="small text-muted">{{ acknowledgement.acknowledged_at|date:"M d, Y H:i" }}</div>
+                    {% else %}
+                        <strong class="d-block text-dark">{{ memo.recipient.get_full_name }}</strong>
+                        <span class="small text-muted">Addressed Recipient Desk</span>
+                        <div class="small text-muted">Awaiting Physical/Digital Receipt</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Official Minutes Notation (if any) -->
+        {% if minutes %}
+            <div class="pt-4 border-top mt-4">
+                <div class="small text-muted fw-bold text-uppercase mb-3">Official Endorsements &amp; Minutes Recorded on File:</div>
+                {% for min in minutes %}
+                    <div class="p-2 mb-2 bg-light border-start border-3 border-dark rounded small">
+                        <strong>{{ min.officer.get_full_name }}</strong> ({{ min.officer.department.name|default:"General Line" }}) &bull; <span class="text-muted">{{ min.created_at|date:"M d, Y H:i" }}:</span>
+                        <div class="fst-italic text-dark mt-1">"{{ min.comment }}"</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Security & Audit Seal Footer -->
+        <div class="pt-4 border-top text-center text-muted small mt-4">
+            <div><i class="bi bi-shield-lock-fill text-success me-1"></i> Formally routed through the Council Workspace System (CWS) Audit &amp; Routing Engine</div>
+            <div class="font-monospace fs-8 text-secondary">Document UID: {{ memo.ref_number }} &bull; Print Date: {% now "Y-m-d H:i:s" %}</div>
+        </div>
+    </div>
+
+</body>
+</html>

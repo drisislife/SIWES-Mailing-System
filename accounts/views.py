@@ -1,13 +1,21 @@
+import csv
+import io
+import random
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
+from django.utils import timezone
+from django.db.models import Count, Q
 from django.contrib.auth import login, logout, authenticate, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect
 from django.contrib import messages
 from .forms import (
     CustomUserCreationForm, UserLoginForm, UserProfileForm,
-    ProcurementMemoCreationForm, QuotesAndVoucherForm, ProcurementActionForm
+    ProcurementMemoCreationForm, QuotesAndVoucherForm, ProcurementActionForm,
+    BulkStaffImportForm
 )
-from .models import Department, ProcurementMemo, ProcurementActionLog
+from .models import Department, ProcurementMemo, ProcurementActionLog, AuditLog
+from .audit import log_audit
 
 User = get_user_model()
 
@@ -27,6 +35,7 @@ def register_view(request):
             user.account_approved = False
             user.save()
             login(request, user)
+            log_audit(request, 'LOGIN', f"User {user.email} successfully logged in", user=user)
             messages.info(
                 request,
                 f'Welcome to CWS, {user.first_name or user.email}! Your registration was successful. Your account is currently pending Administrator verification; you can explore your workspace, but message sending is restricted until an admin verifies your account.'
@@ -49,7 +58,16 @@ def login_view(request):
         form = UserLoginForm(request=request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
+            if getattr(user, 'two_factor_enabled', False):
+                otp = f"{random.randint(100000, 999999)}"
+                user.two_factor_otp = otp
+                user.two_factor_otp_expiry = timezone.now() + timezone.timedelta(minutes=10)
+                user.save(update_fields=['two_factor_otp', 'two_factor_otp_expiry'])
+                request.session['pre_2fa_user_id'] = user.id
+                messages.info(request, f"Security Notice: Your One-Time Password (OTP) is {otp}. (Simulated email transmission).")
+                return redirect('two_factor_verify')
             login(request, user)
+            log_audit(request, 'LOGIN', f"User {user.email} successfully logged in", user=user)
             if not getattr(user, 'account_approved', False) and not user.is_superuser:
                 messages.warning(
                     request,
@@ -66,9 +84,44 @@ def login_view(request):
 
 
 def logout_view(request):
+    if request.user.is_authenticated:
+        log_audit(request, 'LOGOUT', f"User {request.user.email} logged out", user=request.user)
     logout(request)
+
     messages.success(request, 'You have been successfully logged out.')
     return redirect('login')
+
+
+def two_factor_verify_view(request):
+    """Verify 2FA OTP code on login (Feature 16)."""
+    user_id = request.session.get('pre_2fa_user_id')
+    if not user_id:
+        return redirect('login')
+
+    target_user = get_object_or_404(User, id=user_id)
+
+    if request.method == 'POST':
+        otp_entered = request.POST.get('otp', '').strip()
+        if (
+            target_user.two_factor_otp
+            and target_user.two_factor_otp == otp_entered
+            and target_user.two_factor_otp_expiry
+            and timezone.now() <= target_user.two_factor_otp_expiry
+        ):
+            target_user.two_factor_otp = ''
+            target_user.two_factor_otp_expiry = None
+            target_user.save(update_fields=['two_factor_otp', 'two_factor_otp_expiry'])
+            if 'pre_2fa_user_id' in request.session:
+                del request.session['pre_2fa_user_id']
+
+            login(request, target_user)
+            log_audit(request, 'LOGIN', f"User {target_user.email} authenticated with 2FA OTP", user=target_user)
+            messages.success(request, f'2FA Verified! Welcome back, {target_user.first_name or target_user.email}!')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid or expired OTP verification code. Please check and try again.')
+
+    return render(request, 'accounts/two_factor_verify.html', {'target_user': target_user})
 
 
 @login_required
@@ -430,3 +483,239 @@ def advance_procurement_memo_view(request, pk):
             messages.info(request, "Memo is already in a terminal state.")
 
     return redirect('procurement_detail', pk=memo.pk)
+
+# ── Staff Directory (Feature 8) ───────────────────────────────────────────────
+
+@login_required
+def staff_directory_view(request):
+    """Searchable directory of all council officials and colleagues."""
+    staff_qs = User.objects.filter(account_approved=True).select_related('department').order_by('department__name', 'first_name')
+
+    q = request.GET.get('q', '').strip()
+    dept_id = request.GET.get('dept', '').strip()
+    duty_status = request.GET.get('duty', '').strip()
+    role = request.GET.get('role', '').strip()
+
+    if q:
+        staff_qs = staff_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(position__icontains=q)
+        )
+    if dept_id:
+        staff_qs = staff_qs.filter(department_id=dept_id)
+    if duty_status:
+        staff_qs = staff_qs.filter(duty_status=duty_status)
+    if role:
+        staff_qs = staff_qs.filter(role=role)
+
+    departments = Department.objects.all().order_by('name')
+
+    return render(request, 'accounts/staff_directory.html', {
+        'staff_list': staff_qs,
+        'departments': departments,
+        'search_query': q,
+        'selected_dept': dept_id,
+        'selected_duty': duty_status,
+        'selected_role': role,
+    })
+
+
+# ── Analytics Dashboard (Feature 6) ───────────────────────────────────────────
+
+@login_required
+def analytics_dashboard_view(request):
+    """Executive and Administrative analytics for communication volume and accountability."""
+    from messaging.models import Message, MessageAcknowledgement
+
+    if not (request.user.is_superuser or request.user.role in ('ADMIN', 'HOD')):
+        messages.error(request, 'Access Denied: Analytics is restricted to Heads of Department and Council Executives.')
+        return redirect('dashboard')
+
+    total_memos = Message.objects.count()
+    delivered_memos = Message.objects.filter(status='approved').count()
+    read_memos = Message.objects.filter(is_read=True).count()
+    read_rate = round((read_memos / delivered_memos * 100), 1) if delivered_memos else 0
+    acknowledged_count = MessageAcknowledgement.objects.count()
+    ack_rate = round((acknowledged_count / delivered_memos * 100), 1) if delivered_memos else 0
+    recalled_count = Message.objects.filter(status='recalled').count()
+
+    dept_stats = Department.objects.annotate(
+        sent_count=Count('employees__sent_messages', distinct=True),
+        received_count=Count('employees__received_messages', distinct=True)
+    ).order_by('-sent_count')[:10]
+
+    routine_count = Message.objects.filter(priority='ROUTINE').count()
+    urgent_count = Message.objects.filter(priority='URGENT').count()
+    confidential_count = Message.objects.filter(priority='CONFIDENTIAL').count()
+
+    recent_audits = AuditLog.objects.select_related('user')[:8]
+
+    return render(request, 'accounts/analytics_dashboard.html', {
+        'total_memos': total_memos,
+        'delivered_memos': delivered_memos,
+        'read_memos': read_memos,
+        'read_rate': read_rate,
+        'acknowledged_count': acknowledged_count,
+        'ack_rate': ack_rate,
+        'recalled_count': recalled_count,
+        'dept_stats': dept_stats,
+        'routine_count': routine_count,
+        'urgent_count': urgent_count,
+        'confidential_count': confidential_count,
+        'recent_audits': recent_audits,
+    })
+
+
+# ── Bulk Staff Import (Feature 7) ─────────────────────────────────────────────
+
+@login_required
+def bulk_staff_import_view(request):
+    """Admin CSV tool to import council personnel rosters."""
+    if not _require_admin(request):
+        messages.error(request, 'Access Denied: Only Council Administrators can import staff rosters.')
+        return redirect('dashboard')
+
+    import_summary = None
+
+    if request.method == 'POST':
+        form = BulkStaffImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES['csv_file']
+            auto_approve = form.cleaned_data['auto_approve']
+            default_password = form.cleaned_data['default_password']
+
+            try:
+                decoded_file = csv_file.read().decode('utf-8-sig')
+                io_string = io.StringIO(decoded_file)
+                reader = csv.DictReader(io_string)
+
+                created_count = 0
+                updated_count = 0
+                errors = []
+
+                for row_idx, row in enumerate(reader, start=2):
+                    email = (row.get('email') or '').strip().lower()
+                    first_name = (row.get('first_name') or '').strip()
+                    last_name = (row.get('last_name') or '').strip()
+                    dept_name = (row.get('department') or '').strip()
+                    position = (row.get('position') or '').strip()
+                    role = (row.get('role') or 'STAFF').strip().upper()
+
+                    if not email:
+                        errors.append(f'Row {row_idx}: Missing required email.')
+                        continue
+
+                    dept = None
+                    if dept_name:
+                        dept = Department.objects.filter(
+                            Q(name__iexact=dept_name) | Q(name__icontains=dept_name)
+                        ).first()
+
+                    valid_roles = ('STAFF', 'HOD', 'ADMIN')
+                    user_role = role if role in valid_roles else 'STAFF'
+
+                    user, created = User.objects.get_or_create(
+                        username=email,
+                        defaults={
+                            'email': email,
+                            'first_name': first_name,
+                            'last_name': last_name,
+                            'department': dept,
+                            'position': position,
+                            'role': user_role,
+                            'account_approved': auto_approve,
+                        }
+                    )
+
+                    if created:
+                        user.set_password(default_password)
+                        user.save()
+                        created_count += 1
+                    else:
+                        user.first_name = first_name or user.first_name
+                        user.last_name = last_name or user.last_name
+                        if dept:
+                            user.department = dept
+                        if position:
+                            user.position = position
+                        user.role = user_role
+                        if auto_approve:
+                            user.account_approved = True
+                        user.save()
+                        updated_count += 1
+
+                log_audit(
+                    request,
+                    'BULK_IMPORT',
+                    f'Imported CSV roster: {created_count} accounts created, {updated_count} updated. Errors: {len(errors)}'
+                )
+
+                import_summary = {
+                    'created': created_count,
+                    'updated': updated_count,
+                    'errors': errors,
+                }
+                messages.success(request, f'Roster processed: {created_count} new accounts added, {updated_count} existing accounts refreshed.')
+
+            except Exception as e:
+                messages.error(request, f'Failed to process CSV roster file: {e}')
+    else:
+        form = BulkStaffImportForm()
+
+    return render(request, 'accounts/bulk_import.html', {
+        'form': form,
+        'import_summary': import_summary,
+    })
+
+
+def download_sample_roster_csv(request):
+    """Download standard sample CSV template for bulk onboarding."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="CWS_Staff_Roster_Template.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['first_name', 'last_name', 'email', 'department', 'position', 'role'])
+    writer.writerow(['Oladipo', 'Adeyemi', 'o.adeyemi@council.gov.ng', 'ICT', 'Senior Network Engineer', 'STAFF'])
+    writer.writerow(['Fatima', 'Bello', 'f.bello@council.gov.ng', 'HR/Admin', 'Head of Personnel', 'HOD'])
+    writer.writerow(['Chinedu', 'Okafor', 'c.okafor@council.gov.ng', 'Works', 'Civil Engineer II', 'STAFF'])
+    writer.writerow(['Amina', 'Suleiman', 'a.suleiman@council.gov.ng', 'Office of the Council Manager', 'Executive Assistant', 'ADMIN'])
+
+    return response
+
+
+# ── Audit Log Viewer (Feature 14) ─────────────────────────────────────────────
+
+@login_required
+def audit_log_view(request):
+    """Central Security and Administrative Audit Trail for Council Leadership."""
+    if not _require_admin(request):
+        messages.error(request, 'Access Denied: The security audit trail is restricted to Council Administrators.')
+        return redirect('dashboard')
+
+    logs = AuditLog.objects.select_related('user', 'user__department').order_by('-created_at')
+
+    action_filter = request.GET.get('action', '').strip()
+    search_q = request.GET.get('q', '').strip()
+
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if search_q:
+        logs = logs.filter(
+            Q(description__icontains=search_q) |
+            Q(user__email__icontains=search_q) |
+            Q(user__first_name__icontains=search_q) |
+            Q(user__last_name__icontains=search_q) |
+            Q(ip_address__icontains=search_q)
+        )
+
+    logs = logs[:150]
+    action_choices = AuditLog.ACTION_CHOICES
+
+    return render(request, 'accounts/audit_log.html', {
+        'logs': logs,
+        'action_choices': action_choices,
+        'selected_action': action_filter,
+        'search_query': search_q,
+    })

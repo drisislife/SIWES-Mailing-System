@@ -1,0 +1,145 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Council Personnel Directory - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Council Personnel Directory</h2>
+            <div class="text-muted small">Searchable register of all verified officers, departments, and active duty statuses</div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'compose_memo' %}" class="btn btn-cws-emerald">
+                <i class="bi bi-pencil-square"></i>
+                <span>Compose Memo</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar Card -->
+    <div class="cws-card p-3 mb-4">
+        <form method="GET" action="{% url 'staff_directory' %}" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill text-muted ps-3">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 rounded-end-pill" placeholder="Search by officer name, email, or designation...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="dept" class="form-select rounded-pill">
+                    <option value="">All Departments</option>
+                    {% for d in departments %}
+                        <option value="{{ d.id }}" {% if selected_dept == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="duty" class="form-select rounded-pill">
+                    <option value="">All Duty Statuses</option>
+                    <option value="ACTIVE" {% if selected_duty == 'ACTIVE' %}selected{% endif %}>On Active Duty</option>
+                    <option value="ON_LEAVE" {% if selected_duty == 'ON_LEAVE' %}selected{% endif %}>On Approved Leave</option>
+                    <option value="OFFICIAL_ASSIGNMENT" {% if selected_duty == 'OFFICIAL_ASSIGNMENT' %}selected{% endif %}>Official Assignment</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-cws-emerald rounded-pill w-100 py-2">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+                {% if search_query or selected_dept or selected_duty %}
+                    <a href="{% url 'staff_directory' %}" class="btn btn-light border rounded-pill px-3" title="Clear Filter">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Personnel Cards Grid -->
+    <div class="cws-card">
+        <div class="cws-card-header">
+            <div>
+                <h4 class="cws-card-title">
+                    <i class="bi bi-people-fill text-emerald"></i> Council Roster
+                </h4>
+                <div class="cws-card-subtitle">Verified personnel registry</div>
+            </div>
+            <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                Total: {{ staff_list|length }} Officer{{ staff_list|length|pluralize }}
+            </span>
+        </div>
+
+        {% if staff_list %}
+            <div class="row g-3 p-3">
+                {% for officer in staff_list %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="p-3 rounded-4 bg-light border h-100 d-flex flex-column justify-content-between transition-all hover-shadow">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="sidebar-member-avatar" style="width: 44px; height: 44px; font-size: 1rem;">
+                                            {% if officer.first_name %}{{ officer.first_name|slice:":1"|upper }}{{ officer.last_name|slice:":1"|upper }}{% else %}{{ officer.email|slice:":2"|upper }}{% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                                <span>{{ officer.get_full_name }}</span>
+                                                {{ officer.verification_badge_icon }}
+                                            </div>
+                                            <div class="text-muted small">{{ officer.position|default:officer.get_role_display }}</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge {{ officer.role_badge_class }} rounded-pill px-2 py-1 fs-8">
+                                        {{ officer.get_role_display }}
+                                    </span>
+                                </div>
+
+                                <div class="mb-3 ps-1">
+                                    <div class="text-dark small d-flex align-items-center gap-1 mb-1">
+                                        <i class="bi bi-building text-secondary"></i>
+                                        <strong>{{ officer.department.name|default:"General Administration" }}</strong>
+                                    </div>
+                                    <div class="text-muted small d-flex align-items-center gap-1 mb-1">
+                                        <i class="bi bi-envelope text-secondary"></i>
+                                        <span>{{ officer.email }}</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        {{ officer.duty_status_badge }}
+                                        {% if officer.duty_note %}
+                                            <div class="text-muted small mt-1 ps-1 fst-italic">"{{ officer.duty_note }}"</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-top d-flex justify-content-end">
+                                {% if officer.id != request.user.id %}
+                                    <a href="{% url 'compose_memo' %}?recipient={{ officer.id }}" class="btn btn-sm btn-cws-emerald rounded-pill px-3">
+                                        <i class="bi bi-send-fill me-1"></i> Send Memo
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'profile' %}" class="btn btn-sm btn-cws-light rounded-pill px-3">
+                                        <i class="bi bi-person me-1"></i> My Profile
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-person-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">No officers found</h5>
+                <p class="mb-4 text-muted small">No verified personnel match the selected filters.</p>
+                <a href="{% url 'staff_directory' %}" class="btn btn-cws-light">Clear Filters</a>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

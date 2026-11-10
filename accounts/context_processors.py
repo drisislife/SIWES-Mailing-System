@@ -1,12 +1,12 @@
 from django.contrib.auth import get_user_model
-from messaging.models import Message, CouncilCircular
+from messaging.models import Message, CouncilCircular, Notification, NoticeBoardItem
 from accounts.models import ProcurementMemo
 
 User = get_user_model()
 
 
 def cws_global_context(request):
-    """Provides navigation counts and team members for the inspired sidebar UI."""
+    """Provides navigation counts, notifications, and team members for the inspired sidebar UI."""
     if not request.user.is_authenticated:
         return {}
 
@@ -18,6 +18,13 @@ def cws_global_context(request):
         status='approved',
         is_read=False
     ).count()
+
+    # In-app notifications (Feature 10)
+    unread_notifications_count = user.notifications.filter(is_read=False).count()
+    latest_notifications = user.notifications.select_related('actor')[:6]
+
+    # Notice board items count (Feature 17)
+    notice_board_count = NoticeBoardItem.objects.count()
 
     # Pending HOD approvals count
     pending_approvals = 0
@@ -55,5 +62,8 @@ def cws_global_context(request):
         'sidebar_pending_approvals_count': pending_approvals,
         'sidebar_active_vouchers_count': active_vouchers,
         'sidebar_circulars_count': active_circulars_count,
+        'sidebar_notices_count': notice_board_count,
         'sidebar_team_members': team_members,
+        'unread_notifications_count': unread_notifications_count,
+        'latest_notifications': latest_notifications,
     }

@@ -1,0 +1,169 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Central Records Registry &amp; Archive - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Central Records Registry &amp; Archive</h2>
+            <div class="text-muted small">Permanent read-only archive of council memorandums for administrative audit and compliance</div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}export=csv" class="btn btn-cws-light">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Query to CSV
+            </a>
+            <a href="{% url 'analytics_dashboard' %}" class="btn btn-cws-emerald">
+                <i class="bi bi-graph-up"></i>
+                <span>Analytics</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar Card -->
+    <div class="cws-card p-3 mb-4">
+        <form method="GET" action="{% url 'records_archive' %}" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <input type="text" name="q" value="{{ search_query }}" class="form-control rounded-pill" placeholder="Search ref, subject, officer...">
+            </div>
+            <div class="col-md-2">
+                <select name="dept" class="form-select rounded-pill">
+                    <option value="">All Departments</option>
+                    {% for d in departments %}
+                        <option value="{{ d.id }}" {% if selected_dept == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="priority" class="form-select rounded-pill">
+                    <option value="">All Priorities</option>
+                    <option value="URGENT" {% if selected_priority == 'URGENT' %}selected{% endif %}>Urgent</option>
+                    <option value="CONFIDENTIAL" {% if selected_priority == 'CONFIDENTIAL' %}selected{% endif %}>Confidential</option>
+                    <option value="ROUTINE" {% if selected_priority == 'ROUTINE' %}selected{% endif %}>Routine</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="from" value="{{ date_from }}" class="form-control rounded-pill" title="Start Date">
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="to" value="{{ date_to }}" class="form-control rounded-pill" title="End Date">
+            </div>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-cws-emerald rounded-pill w-100 py-2">
+                    <i class="bi bi-filter"></i>
+                </button>
+                {% if search_query or selected_dept or selected_priority or date_from or date_to %}
+                    <a href="{% url 'records_archive' %}" class="btn btn-light border rounded-pill px-2" title="Clear Filters">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Registry Table Card -->
+    <div class="cws-card">
+        <div class="cws-card-header">
+            <div>
+                <h4 class="cws-card-title">
+                    <i class="bi bi-archive-fill text-emerald"></i> Council File Register
+                </h4>
+                <div class="cws-card-subtitle">Permanent repository index</div>
+            </div>
+            <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                Total Files Indexed: {{ total_records }}
+            </span>
+        </div>
+
+        {% if memos %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-muted">
+                        <tr>
+                            <th>Reference Number</th>
+                            <th>Priority</th>
+                            <th>Subject</th>
+                            <th>Originating Officer</th>
+                            <th>Addressed Desk</th>
+                            <th>Date Dispatched</th>
+                            <th>Receipt Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for memo in memos %}
+                            <tr>
+                                <td class="font-monospace text-nowrap fw-bold text-dark">
+                                    {{ memo.ref_number }}
+                                </td>
+                                <td>
+                                    {% if memo.priority == 'URGENT' %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1 fs-8">Urgent</span>
+                                    {% elif memo.priority == 'CONFIDENTIAL' %}
+                                        <span class="badge bg-dark rounded-pill px-2 py-1 fs-8">Confidential</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill px-2 py-1 fs-8">Routine</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'message_detail' memo.id %}" class="fw-bold text-dark text-decoration-none">
+                                        {{ memo.subject }}
+                                    </a>
+                                    {% if memo.attachment %}
+                                        <i class="bi bi-paperclip text-primary ms-1" title="Has attached document"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ memo.sender.get_full_name }}</div>
+                                    <div class="text-muted fs-8">{{ memo.sender.department.name|default:"General Line" }}</div>
+                                </td>
+                                <td>
+                                    <div>{{ memo.recipient.get_full_name }}</div>
+                                    <div class="text-muted fs-8">{{ memo.recipient.department.name|default:"General Line" }}</div>
+                                </td>
+                                <td class="text-nowrap text-muted font-monospace">
+                                    {{ memo.timestamp|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    {% if memo.acknowledgement %}
+                                        <span class="badge bg-success rounded-pill px-2 py-1" title="Formally signed off">
+                                            <i class="bi bi-patch-check-fill me-1"></i> Signed off
+                                        </span>
+                                    {% elif memo.is_read %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+                                            <i class="bi bi-check2-all me-1"></i> Read
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1">
+                                            Delivered
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'message_detail' memo.id %}" class="btn btn-sm btn-cws-light rounded-pill px-2 py-1" title="View Memo">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'memo_pdf' memo.id %}" target="_blank" class="btn btn-sm btn-cws-light rounded-pill px-2 py-1" title="Print Letterhead">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-archive fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">No records found</h5>
+                <p class="mb-4 text-muted small">No archived files matched your query filters.</p>
+                <a href="{% url 'records_archive' %}" class="btn btn-cws-light">Clear Filters</a>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

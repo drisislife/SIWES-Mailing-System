@@ -1,0 +1,153 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Security &amp; Administrative Audit Trail - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Security &amp; Administrative Audit Trail</h2>
+            <div class="text-muted small">Immutable compliance log of user logins, memo dispatches, approvals, sign-offs, and recalls</div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'analytics_dashboard' %}" class="btn btn-cws-light">
+                <i class="bi bi-graph-up text-muted me-1"></i> Analytics Dashboard
+            </a>
+            <button onclick="window.print()" class="btn btn-cws-light">
+                <i class="bi bi-printer me-1"></i> Print Log
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar Card -->
+    <div class="cws-card p-3 mb-4 no-print">
+        <form method="GET" action="{% url 'audit_log' %}" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill text-muted ps-3">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 rounded-end-pill" placeholder="Search by officer name, email, IP address, or event details...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="action" class="form-select rounded-pill">
+                    <option value="">All Audit Action Types</option>
+                    {% for code, label in action_choices %}
+                        <option value="{{ code }}" {% if selected_action == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cws-emerald rounded-pill w-100 py-2">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+                {% if search_query or selected_action %}
+                    <a href="{% url 'audit_log' %}" class="btn btn-light border rounded-pill px-3" title="Clear Filter">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Log Records Table Card -->
+    <div class="cws-card">
+        <div class="cws-card-header">
+            <div>
+                <h4 class="cws-card-title">
+                    <i class="bi bi-shield-shaded text-emerald"></i> System Audit Journal
+                </h4>
+                <div class="cws-card-subtitle">Chronological ledger of security and administrative operations</div>
+            </div>
+            <span class="badge bg-light text-secondary border rounded-pill px-3 py-2">
+                Showing {{ logs|length }} Entries
+            </span>
+        </div>
+
+        {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-muted">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action Type</th>
+                            <th>Operating Officer</th>
+                            <th>Department</th>
+                            <th>Event Description</th>
+                            <th class="text-end">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for entry in logs %}
+                            <tr>
+                                <td class="font-monospace text-nowrap text-muted">
+                                    {{ entry.created_at|date:"M d, Y H:i:s" }}
+                                </td>
+                                <td>
+                                    {% if entry.action == 'LOGIN' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Login</span>
+                                    {% elif entry.action == 'LOGOUT' %}
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Logout</span>
+                                    {% elif entry.action == 'FAILED_LOGIN' %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Failed Login</span>
+                                    {% elif entry.action == 'MEMO_SENT' %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Memo Sent</span>
+                                    {% elif entry.action == 'MEMO_READ' %}
+                                        <span class="badge bg-info-subtle text-dark border border-info-subtle rounded-pill">Memo Read</span>
+                                    {% elif entry.action == 'MEMO_ACKNOWLEDGED' %}
+                                        <span class="badge bg-success rounded-pill">Acknowledged</span>
+                                    {% elif entry.action == 'MEMO_RECALLED' %}
+                                        <span class="badge bg-warning text-dark rounded-pill">Recalled</span>
+                                    {% elif entry.action == 'HOD_APPROVED' %}
+                                        <span class="badge bg-emerald text-white rounded-pill">HOD Approved</span>
+                                    {% elif entry.action == 'HOD_REJECTED' %}
+                                        <span class="badge bg-danger text-white rounded-pill">HOD Rejected</span>
+                                    {% elif entry.action == 'BULK_IMPORT' %}
+                                        <span class="badge bg-dark rounded-pill">Bulk Import</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border rounded-pill">{{ entry.get_action_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.user %}
+                                        <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                            <span>{{ entry.user.get_full_name }}</span>
+                                            {{ entry.user.verification_badge_icon }}
+                                        </div>
+                                        <div class="text-muted fs-8">{{ entry.user.email }}</div>
+                                    {% else %}
+                                        <span class="text-muted">Unauthenticated / System</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border rounded-pill">
+                                        {{ entry.user.department.name|default:"General Line" }}
+                                    </span>
+                                </td>
+                                <td class="text-dark">
+                                    {{ entry.description }}
+                                </td>
+                                <td class="text-end font-monospace text-muted">
+                                    {{ entry.ip_address|default:"127.0.0.1" }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-shield-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">No audit logs found</h5>
+                <p class="mb-4 text-muted small">No audit trail events match your current filter query.</p>
+                <a href="{% url 'audit_log' %}" class="btn btn-cws-light">Clear Filters</a>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

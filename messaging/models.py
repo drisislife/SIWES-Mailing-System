@@ -9,6 +9,7 @@ class Message(models.Model):
         ('pending_hod', 'Pending HOD Approval'),
         ('approved', 'Delivered'),
         ('rejected', 'Rejected by HOD'),
+        ('recalled', 'Recalled by Sender'),
     )
 
     PRIORITY_CHOICES = (
@@ -40,6 +41,14 @@ class Message(models.Model):
     hod_comment = models.TextField(blank=True, default='')
     edited_by_hod = models.BooleanField(default=False)
     original_body = models.TextField(blank=True, default='')
+
+    # Recall tracking (Feature 5)
+    recalled_at = models.DateTimeField(null=True, blank=True)
+    recall_reason = models.CharField(max_length=255, blank=True, default='', help_text="Reason for recalling memo")
+
+    # Priority Escalation (Feature 19)
+    escalated = models.BooleanField(default=False)
+    escalated_at = models.DateTimeField(null=True, blank=True)
 
     # Reply threading
     parent = models.ForeignKey(
@@ -119,3 +128,62 @@ class CouncilCircular(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_priority_display()})"
+
+
+class MemoTemplate(models.Model):
+    """Pre-formatted standard council memorandum templates (Feature 9)."""
+    title = models.CharField(max_length=150)
+    category = models.CharField(max_length=100, default='General Administration')
+    default_priority = models.CharField(max_length=20, choices=Message.PRIORITY_CHOICES, default='ROUTINE')
+    default_subject = models.CharField(max_length=255)
+    default_body = models.TextField()
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    is_system_template = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['category', 'title']
+
+    def __str__(self):
+        return f"{self.title} ({self.category})"
+
+
+class Notification(models.Model):
+    """In-app alert for user actions, memo routing, and circulars (Feature 10)."""
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    verb = models.CharField(max_length=255)
+    target_url = models.CharField(max_length=255, blank=True, default='')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.recipient}: {self.verb}"
+
+
+class NoticeBoardItem(models.Model):
+    """Internal Council Notice Board for informal announcements and events (Feature 17)."""
+    CATEGORY_CHOICES = (
+        ('GENERAL', 'General Notice'),
+        ('MEETING', 'Council / Dept Meeting'),
+        ('WELFARE', 'Staff Welfare & Events'),
+        ('URGENT', 'Urgent Council Advisory'),
+    )
+
+    title = models.CharField(max_length=255)
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='GENERAL')
+    content = models.TextField()
+    is_pinned = models.BooleanField(default=False, help_text="Pin to top of notice board")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notices_posted')
+    attachment = models.FileField(upload_to='notice_board/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+
+    def __str__(self):
+        return f"[{self.get_category_display()}] {self.title}"

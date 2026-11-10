@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Message, MessageMinute, CouncilCircular, MessageAcknowledgement
+from .models import Message, MessageMinute, CouncilCircular, MessageAcknowledgement, NoticeBoardItem, MemoTemplate
 
 User = get_user_model()
 
@@ -76,3 +76,37 @@ class CouncilCircularForm(forms.ModelForm):
             }),
             'attachment': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+
+
+class NoticeBoardForm(forms.ModelForm):
+    """Form to publish notices to the council notice board (Feature 17)."""
+    class Meta:
+        model = NoticeBoardItem
+        fields = ['title', 'category', 'content', 'attachment', 'is_pinned']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Notice Heading / Announcement Subject'
+            }),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Enter announcement details, date, time, venue, or notice body...'
+            }),
+            'attachment': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'is_pinned': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class MemoRecallForm(forms.Form):
+    """Form to record reason when recalling/withdrawing a memo (Feature 5)."""
+    recall_reason = forms.CharField(
+        max_length=255,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Reason for recalling memo (e.g., Attached draft document, figures being updated)...'
+        }),
+        label="Reason for Recall"
+    )

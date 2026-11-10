@@ -1,0 +1,37 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Two-Factor Security Verification - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center pt-md-4">
+    <div class="col-md-6 col-lg-5">
+        <div class="cws-card p-4 p-md-5 shadow-sm text-center">
+            <div class="sidebar-brand-icon mx-auto mb-3" style="width: 56px; height: 56px; font-size: 1.6rem;">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">Security Verification</h3>
+            <p class="text-muted small mb-4">
+                A 6-digit One-Time Password (OTP) has been generated for <strong>{{ target_user.email }}</strong>. Enter the verification code to continue.
+            </p>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <input type="text" name="otp" class="form-control form-control-lg text-center font-monospace fs-3 tracking-widest rounded-4 border-2" placeholder="••••••" maxlength="6" required autofocus autocomplete="one-time-code">
+                    <div class="form-text small text-muted mt-2">Code is valid for 10 minutes.</div>
+                </div>
+
+                <div class="d-grid gap-2 mb-3">
+                    <button type="submit" class="btn btn-cws-emerald py-3 fs-6">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Verify &amp; Authenticate</span>
+                    </button>
+                    <a href="{% url 'login' %}" class="btn btn-cws-light py-2">
+                        <i class="bi bi-arrow-left me-1"></i> Cancel &amp; Return to Login
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

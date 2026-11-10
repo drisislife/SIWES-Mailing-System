@@ -1,0 +1,172 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Council Notice Board - CWS Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Council Notice Board &amp; Bulletin</h2>
+            <div class="text-muted small">Informal announcements, committee meetings, staff welfare advisories, and council updates</div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'circulars_list' %}" class="btn btn-cws-light">
+                <i class="bi bi-megaphone-fill text-muted me-1"></i> Official Circulars
+            </a>
+            {% if can_post %}
+                <button type="button" class="btn btn-cws-emerald" data-bs-toggle="collapse" data-bs-target="#newNoticeCollapse">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    <span>Post New Notice</span>
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Post Notice Collapse Form (HOD / Admin only) -->
+    {% if can_post %}
+        <div class="collapse mb-4" id="newNoticeCollapse">
+            <div class="cws-card p-4 p-md-5 border-start border-4 border-emerald shadow-sm">
+                <div class="cws-card-header mb-4">
+                    <div>
+                        <h4 class="cws-card-title">
+                            <i class="bi bi-pin-angle-fill text-emerald"></i> Post a Notice to the Bulletin Board
+                        </h4>
+                        <div class="cws-card-subtitle">Broadcast advisories visible to all council staff</div>
+                    </div>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="post_notice">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.title.id_for_label }}">
+                                Notice Title *
+                            </label>
+                            {{ form.title }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.category.id_for_label }}">
+                                Category *
+                            </label>
+                            {{ form.category }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.content.id_for_label }}">
+                            Notice Content / Details *
+                        </label>
+                        {{ form.content }}
+                    </div>
+
+                    <div class="row g-3 mb-4 align-items-center">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted text-uppercase" for="{{ form.attachment.id_for_label }}">
+                                Optional Attachment (Flyer / Document)
+                            </label>
+                            {{ form.attachment }}
+                        </div>
+                        <div class="col-md-4 pt-md-3">
+                            <div class="form-check form-switch ps-5">
+                                {{ form.is_pinned }}
+                                <label class="form-check-label fw-bold text-dark" for="{{ form.is_pinned.id_for_label }}">
+                                    Pin to Top of Board
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-end border-top pt-3">
+                        <button type="button" class="btn btn-cws-light me-2" data-bs-toggle="collapse" data-bs-target="#newNoticeCollapse">Cancel</button>
+                        <button type="submit" class="btn btn-cws-emerald px-4 py-2">
+                            <i class="bi bi-send-fill"></i>
+                            <span>Publish Notice</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Filter Categories Pill Navigation -->
+    <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+        <a href="{% url 'notice_board' %}" class="btn {% if not selected_category %}btn-cws-emerald{% else %}btn-cws-light{% endif %} rounded-pill px-3 py-1 fs-8">
+            All Notices
+        </a>
+        <a href="?category=GENERAL" class="btn {% if selected_category == 'GENERAL' %}btn-cws-emerald{% else %}btn-cws-light{% endif %} rounded-pill px-3 py-1 fs-8">
+            General
+        </a>
+        <a href="?category=MEETING" class="btn {% if selected_category == 'MEETING' %}btn-cws-emerald{% else %}btn-cws-light{% endif %} rounded-pill px-3 py-1 fs-8">
+            Meetings
+        </a>
+        <a href="?category=WELFARE" class="btn {% if selected_category == 'WELFARE' %}btn-cws-emerald{% else %}btn-cws-light{% endif %} rounded-pill px-3 py-1 fs-8">
+            Staff Welfare
+        </a>
+        <a href="?category=URGENT" class="btn {% if selected_category == 'URGENT' %}btn-cws-emerald{% else %}btn-cws-light{% endif %} rounded-pill px-3 py-1 fs-8">
+            Urgent Advisories
+        </a>
+    </div>
+
+    <!-- Notices Cards List -->
+    {% if notices %}
+        <div class="row g-4">
+            {% for item in notices %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="cws-card h-100 p-4 d-flex flex-column justify-content-between position-relative {% if item.is_pinned %}border-top border-4 border-emerald shadow-sm{% endif %}">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge {% if item.category == 'URGENT' %}bg-danger{% elif item.category == 'MEETING' %}bg-primary{% elif item.category == 'WELFARE' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-2 py-1 fs-8">
+                                    {{ item.get_category_display }}
+                                </span>
+                                {% if item.is_pinned %}
+                                    <span class="badge bg-emerald-subtle text-emerald border border-emerald-subtle rounded-pill px-2 py-1 fs-8" title="Pinned Announcement">
+                                        <i class="bi bi-pin-angle-fill me-1"></i> Pinned
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <h5 class="fw-bold text-dark mb-2">{{ item.title }}</h5>
+                            <div class="text-dark small mb-3" style="white-space: pre-wrap; line-height: 1.6;">
+                                {{ item.content }}
+                            </div>
+
+                            {% if item.attachment %}
+                                <div class="mb-3">
+                                    <a href="{{ item.attachment.url }}" target="_blank" class="btn btn-sm btn-cws-light rounded-pill px-3 py-1" download>
+                                        <i class="bi bi-paperclip me-1 text-primary"></i> Download Attachment
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="pt-3 border-top d-flex justify-content-between align-items-center text-muted small">
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-person-fill"></i>
+                                <span>{{ item.author.get_full_name }}</span>
+                            </div>
+                            <span class="font-monospace fs-8">{{ item.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="cws-card p-5 text-center text-muted">
+            <i class="bi bi-clipboard fs-1 d-block mb-3 text-secondary opacity-50"></i>
+            <h5 class="fw-bold text-dark">No notices on the board</h5>
+            <p class="mb-3 text-muted small">No active advisories or announcements are posted under this category.</p>
+            {% if can_post %}
+                <button type="button" class="btn btn-cws-emerald" data-bs-toggle="collapse" data-bs-target="#newNoticeCollapse">
+                    <i class="bi bi-plus-circle-fill me-1"></i> Post the First Notice
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
